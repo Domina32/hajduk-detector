@@ -25,3 +25,7 @@ body {
 .radix-themes[data-is-root-theme='true'] {
   height: 100%;
 }
+
+ol {
+  padding-inline-start: 0;
+}
