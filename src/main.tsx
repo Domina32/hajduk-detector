@@ -7,7 +7,7 @@ import './styles.css';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <Theme>
+    <Theme accentColor="sky" grayColor="gray" panelBackground="solid" scaling="100%" radius="full">
       <App />
     </Theme>
   </React.StrictMode>,

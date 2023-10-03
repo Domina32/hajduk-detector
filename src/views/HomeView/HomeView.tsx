@@ -1,4 +1,4 @@
-import { Button, Dialog, Flex } from '@radix-ui/themes';
+import { Button, Container, Dialog, Flex, Text } from '@radix-ui/themes';
 import { add, format, isBefore, isToday, startOfToday } from 'date-fns';
 import schedule from '../../mocks/mock.json';
 import styles from './HomeView.module.css';
@@ -22,44 +22,54 @@ const HomeView = () => {
   );
 
   return (
-    <Flex height="100%" align="center" direction="column">
-      <Dialog.Root>
-        <Dialog.Trigger>
-          <Button>View full schedule</Button>
-        </Dialog.Trigger>
+    <Container size="1">
+      <Flex height="100%" align="start" direction="column">
+        <Dialog.Root>
+          <Dialog.Trigger>
+            <Button m="3">
+              <Text>View full schedule</Text>
+            </Button>
+          </Dialog.Trigger>
 
-        <Dialog.Content style={{ maxWidth: 450 }}>
-          <Dialog.Title>All games</Dialog.Title>
-          <Dialog.Description size="2" mb="4">
-            <Schedule games={schedule} />
-          </Dialog.Description>
+          <Dialog.Content style={{ maxWidth: 450 }}>
+            <Dialog.Title>
+              <Text>All games</Text>
+            </Dialog.Title>
+            <Dialog.Description size="2" mb="4">
+              <Schedule games={schedule} />
+            </Dialog.Description>
 
-          <Flex gap="3" mt="4" justify="end">
-            <Dialog.Close>
-              <Button variant="soft" color="gray">
-                Close
-              </Button>
-            </Dialog.Close>
-          </Flex>
-        </Dialog.Content>
-      </Dialog.Root>
+            <Flex gap="3" mt="4" justify="end">
+              <Dialog.Close>
+                <Button variant="soft" color="gray">
+                  <Text>Close</Text>
+                </Button>
+              </Dialog.Close>
+            </Flex>
+          </Dialog.Content>
+        </Dialog.Root>
 
-      <Flex direction="column" className={styles.current}>
-        Today&lsquo;s game:&nbsp;
-        {todayGames.length === 0
-          ? 'no games today'
-          : todayGames.map((entry) => (
+        <Flex direction="column" align="start" justify="center" p="4" className={styles.current}>
+          <Text>Today&lsquo;s game:&nbsp;</Text>
+          {todayGames.length === 0 ? (
+            <Text>no games today</Text>
+          ) : (
+            todayGames.map((entry) => (
               <Flex key={entry.datetime}>
-                on at {entry.location} at {format(new Date(entry.datetime), 'HH:mm')}
+                <Text>
+                  on at {entry.location} at {format(new Date(entry.datetime), 'HH:mm')}
+                </Text>
               </Flex>
-            ))}
-      </Flex>
+            ))
+          )}
+        </Flex>
 
-      <Flex direction="column">
-        Games in the next month:&nbsp;
-        <Schedule games={soonGames} />
+        <Flex direction="column" width="100%" p="5">
+          <Text>Games in the next month:&nbsp;</Text>
+          <Schedule games={soonGames} />
+        </Flex>
       </Flex>
-    </Flex>
+    </Container>
   );
 };
 

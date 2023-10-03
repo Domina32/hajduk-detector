@@ -1,6 +1,4 @@
-.current {
-  height: 10%;
-
+.header {
   background-color: var(--accent-9);
   border-radius: 30px;
   font-size: large;
