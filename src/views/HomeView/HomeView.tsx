@@ -1,24 +1,25 @@
 import { Button, Container, Dialog, Flex, Text } from '@radix-ui/themes';
-import { add, format, isBefore, isToday, startOfToday } from 'date-fns';
+import { add, format, isAfter, isBefore, isToday, startOfToday } from 'date-fns';
 import schedule from '../../mocks/mock.json';
 import styles from './HomeView.module.css';
 import Schedule from './partials/Schedule/Schedule';
 
 const HomeView = () => {
   const todayGames = schedule.filter((entry) => isToday(new Date(entry.datetime)));
-  const soonGames = schedule.filter((entry) =>
-    isBefore(
-      new Date(entry.datetime),
-      add(startOfToday(), {
-        years: 0,
-        months: 1,
-        weeks: 0,
-        days: 0,
-        hours: 0,
-        minutes: 0,
-        seconds: 0,
-      }),
-    ),
+  const soonGames = schedule.filter(
+    (entry) =>
+      isBefore(
+        new Date(entry.datetime),
+        add(startOfToday(), {
+          years: 0,
+          months: 1,
+          weeks: 0,
+          days: 0,
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+        }),
+      ) && isAfter(new Date(entry.datetime), startOfToday()),
   );
 
   return (

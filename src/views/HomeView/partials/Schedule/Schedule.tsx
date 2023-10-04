@@ -1,6 +1,5 @@
-import { Box, Flex, Text } from '@radix-ui/themes';
+import { Table, TableBody, Text } from '@radix-ui/themes';
 import { format } from 'date-fns';
-import styles from './Schedule.module.css';
 
 interface Game {
   datetime: string;
@@ -12,32 +11,30 @@ interface ScheduleProps {
 }
 
 const Schedule: React.FC<ScheduleProps> = ({ games }) => (
-  <Flex asChild direction="column" gap="5" grow="1">
-    <ol>
-      <Flex asChild className={styles.header} pl="4" pr="4">
-        <li>
-          <Box grow="1" style={{ width: '70%' }}>
-            <Text weight="medium">Date & time</Text>
-          </Box>
-          <Box grow="1" style={{ width: '30%' }}>
-            <Text weight="medium">Location</Text>
-          </Box>
-        </li>
-      </Flex>
+  <Table.Root variant="surface">
+    <Table.Header>
+      <Table.Row>
+        <Table.ColumnHeaderCell>
+          <Text weight="medium">Date & time</Text>
+        </Table.ColumnHeaderCell>
+        <Table.ColumnHeaderCell>
+          <Text weight="medium">Location</Text>
+        </Table.ColumnHeaderCell>
+      </Table.Row>
+    </Table.Header>
+    <TableBody>
       {games.map(({ datetime, location }) => (
-        <Flex asChild key={datetime}>
-          <li>
-            <Box grow="1" style={{ width: '70%' }}>
-              <Text>{format(new Date(datetime), 'MM/dd/yyyy HH:mm')}</Text>
-            </Box>
-            <Box grow="1" style={{ width: '30%' }}>
-              <Text>{location}</Text>
-            </Box>
-          </li>
-        </Flex>
+        <Table.Row key={datetime}>
+          <Table.Cell>
+            <Text>{format(new Date(datetime), 'MM/dd/yyyy HH:mm')}</Text>
+          </Table.Cell>
+          <Table.Cell>
+            <Text>{location}</Text>
+          </Table.Cell>
+        </Table.Row>
       ))}
-    </ol>
-  </Flex>
+    </TableBody>
+  </Table.Root>
 );
 
 export default Schedule;
