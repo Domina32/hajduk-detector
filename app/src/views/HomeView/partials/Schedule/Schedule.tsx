@@ -2,6 +2,7 @@ import { Table, TableBody, Text } from '@radix-ui/themes';
 import { format } from 'date-fns';
 
 interface Game {
+  teams: string;
   datetime: string;
   location: string;
 }
@@ -20,16 +21,22 @@ const Schedule: React.FC<ScheduleProps> = ({ games }) => (
         <Table.ColumnHeaderCell>
           <Text weight="medium">Location</Text>
         </Table.ColumnHeaderCell>
+        <Table.ColumnHeaderCell>
+          <Text weight="medium">Teams</Text>
+        </Table.ColumnHeaderCell>
       </Table.Row>
     </Table.Header>
     <TableBody>
-      {games.map(({ datetime, location }) => (
+      {games.map(({ teams, datetime, location }) => (
         <Table.Row key={datetime}>
           <Table.Cell>
             <Text>{format(new Date(datetime), 'MM/dd/yyyy HH:mm')}</Text>
           </Table.Cell>
           <Table.Cell>
             <Text>{location}</Text>
+          </Table.Cell>
+          <Table.Cell>
+            <Text>{teams}</Text>
           </Table.Cell>
         </Table.Row>
       ))}
