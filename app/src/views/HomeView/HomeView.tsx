@@ -1,6 +1,6 @@
 import { Button, Container, Dialog, Flex, Text } from '@radix-ui/themes';
 import { add, format, isAfter, isBefore, isToday, startOfToday } from 'date-fns';
-import schedule from '../../mocks/mock.json';
+import schedule from '../../mocks/scraped.json';
 import styles from './HomeView.module.css';
 import Schedule from './partials/Schedule/Schedule';
 
@@ -36,9 +36,8 @@ const HomeView = () => {
             <Dialog.Title>
               <Text>All games</Text>
             </Dialog.Title>
-            <Dialog.Description size="2" mb="4">
-              <Schedule games={schedule} />
-            </Dialog.Description>
+
+            <Schedule games={schedule} />
 
             <Flex gap="3" mt="4" justify="end">
               <Dialog.Close>

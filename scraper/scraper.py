@@ -94,7 +94,7 @@ for element in driver.find_elements(By.CLASS_NAME, "disabled"):
         + parse_date_days(partially_parsed_date[1])
     )
 
-    date_time_parsed = just_date + "T" + just_time
+    date_time_parsed = "2024-" + just_date + "T" + just_time
 
     index = 1
     for i, character in enumerate(teams_and_location):
