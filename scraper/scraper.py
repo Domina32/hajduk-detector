@@ -1,6 +1,7 @@
 from selenium.webdriver import Chrome
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from datetime import datetime
 import json
 import os
 import re
@@ -64,36 +65,41 @@ browser.find_element(By.CLASS_NAME, "cookie-popup__close").click()
 data: list[dict[str, str]] = []
 
 schedule_div = browser.find_element(By.ID, "raspored")
-print(schedule_div.text.split("\n"))
+current_year = str(datetime.now().year)
 
-for element in browser.find_elements(By.CLASS_NAME, "disabled"):
-    teams_and_location, date_time = (
-        element.text.split("\n")[1].split("   ")[0].split(", ")
-    )
+for element in schedule_div.find_elements(  # type:ignore
+    By.CSS_SELECTOR, "#raspored > *"
+):
+    if element.tag_name == "h3":
+        current_year = element.text.split(" ")[1][:-1]
+    elif element.tag_name == "a":
+        teams_and_location, date_time = (
+            element.text.split("\n")[1].split("   ")[0].split(", ")
+        )
 
-    just_time = date_time.split(" ")[3][:-1] + ":00Z"
-    partially_parsed_date = parse_date_months(date_time.split(" u ")[0]).split(".")[
-        ::-1
-    ]
-    just_date = (
-        partially_parsed_date[0].strip()
-        + "-"
-        + parse_date_days(partially_parsed_date[1])
-    )
+        just_time = date_time.split(" ")[3][:-1] + ":00Z"
+        partially_parsed_date = parse_date_months(date_time.split(" u ")[0]).split(".")[
+            ::-1
+        ]
+        just_date = (
+            partially_parsed_date[0].strip()
+            + "-"
+            + parse_date_days(partially_parsed_date[1])
+        )
 
-    date_time_parsed = "2024-" + just_date + "T" + just_time
+        date_time_parsed = current_year + "-" + just_date + "T" + just_time
 
-    index = 1
-    for i, character in enumerate(teams_and_location):
-        if character.islower():
-            index = i
-            break
+        index = 1
+        for i, character in enumerate(teams_and_location):
+            if character.islower():
+                index = i
+                break
 
-    teams = teams_and_location[: index - 1]
-    location = teams_and_location[index - 1 :]
+        teams = teams_and_location[: index - 1]
+        location = teams_and_location[index - 1 :]
 
-    entry = {"teams": teams, "location": location, "datetime": date_time_parsed}
-    data.append(entry)
+        entry = {"teams": teams, "location": location, "datetime": date_time_parsed}
+        data.append(entry)
 
 json_path = "/home/animod/Git/hajduk-detector/app/src/mocks"
 json_name = "scraped.json"
