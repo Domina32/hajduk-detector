@@ -1,10 +1,35 @@
 import { Button, Container, Dialog, Flex, Text } from '@radix-ui/themes';
 import { add, format, isAfter, isBefore, isToday, startOfToday } from 'date-fns';
-import schedule from '../../mocks/scraped.json';
+import scraped from '../../mocks/scraped.json';
 import styles from './HomeView.module.css';
 import Schedule from './partials/Schedule/Schedule';
+import { useEffect, useState } from 'react';
+
+type Game = (typeof scraped)[number];
+
+async function getSchedule(): Promise<Game[]> {
+  console.log('FETCH');
+
+  try {
+    const response = await fetch('http://localhost:8000/schedule');
+    return (await response.json()) as typeof scraped;
+  } catch {
+    return Promise.resolve([]);
+  }
+}
 
 const HomeView = () => {
+  const [schedule, setSchedule] = useState<Game[]>([]);
+
+  useEffect(() => {
+    const fetchSchedule = async () => {
+      setSchedule(await getSchedule());
+    };
+    void fetchSchedule();
+  }, []);
+
+  console.log(schedule);
+
   const todayGames = schedule.filter((entry) => isToday(new Date(entry.datetime)));
   const soonGames = schedule.filter(
     (entry) =>
