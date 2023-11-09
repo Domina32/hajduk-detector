@@ -16,6 +16,10 @@ dist-ssr
 
 .vite
 
+.mypy_cache
+
+target
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
