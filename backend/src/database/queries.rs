@@ -1,3 +1,5 @@
+use crate::database::models::{Game, NewGame};
+
 fn get_games() {
     use database::schema::games::dsl::*;
 
@@ -16,4 +18,20 @@ fn get_games() {
         println!("-----------\n");
         println!("{}", game.datetime);
     }
+}
+
+fn create_game(conn: &mut SqliteConnection, teams: &str, location: &str, datetime: &str) -> Game {
+    use crate::database::schema::games;
+
+    let new_game = NewGame {
+        teams,
+        location,
+        datetime,
+    };
+
+    diesel::insert_into(games::table)
+        .values(&new_game)
+        .returning(Game::as_returning())
+        .get_result(conn)
+        .expect("Error saving new game")
 }
