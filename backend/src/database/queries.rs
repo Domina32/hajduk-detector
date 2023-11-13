@@ -1,26 +1,39 @@
-use crate::database::models::{Game, NewGame};
+use diesel::{QueryDsl, SelectableHelper, SqliteConnection};
 
-fn get_games() {
-    use database::schema::games::dsl::*;
+use crate::database::{
+    establish_connection,
+    models::{Game, NewGame},
+};
 
+pub fn get_games() -> Vec<Game> {
+    use crate::database::schema::games::dsl::*;
     let connection = &mut establish_connection();
-    let results = games
-        .limit(5)
-        .select(database::models::Game::as_select())
-        .load(connection)
-        .expect("Error loading games");
+    let results = diesel::RunQueryDsl::load(
+        games
+            .limit(5)
+            .select(crate::database::models::Game::as_select()),
+        connection,
+    )
+    .expect("Error loading games");
 
-    println!("Displaying {} games", results.len());
-    for game in results {
-        println!("{}", game.teams);
-        println!("-----------\n");
-        println!("{}", game.location);
-        println!("-----------\n");
-        println!("{}", game.datetime);
-    }
+    results
+
+    // println!("Displaying {} games", results.len());
+    // for game in results {
+    //     println!("{}", game.teams);
+    //     println!("-----------\n");
+    //     println!("{}", game.location);
+    //     println!("-----------\n");
+    //     println!("{}", game.datetime);
+    // }
 }
 
-fn create_game(conn: &mut SqliteConnection, teams: &str, location: &str, datetime: &str) -> Game {
+pub fn create_game(
+    conn: &mut SqliteConnection,
+    teams: &str,
+    location: &str,
+    datetime: &str,
+) -> Game {
     use crate::database::schema::games;
 
     let new_game = NewGame {
@@ -29,9 +42,11 @@ fn create_game(conn: &mut SqliteConnection, teams: &str, location: &str, datetim
         datetime,
     };
 
-    diesel::insert_into(games::table)
-        .values(&new_game)
-        .returning(Game::as_returning())
-        .get_result(conn)
-        .expect("Error saving new game")
+    diesel::RunQueryDsl::get_result(
+        diesel::insert_into(games::table)
+            .values(&new_game)
+            .returning(Game::as_returning()),
+        conn,
+    )
+    .expect("Error saving new game")
 }

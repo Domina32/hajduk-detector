@@ -2,110 +2,61 @@ from selenium.webdriver import Chrome
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from datetime import datetime
-import json
-import os
-import re
-
-url = "https://hajduk.hr/utakmice/raspored"
-
-
-def parse_date_months(text: str) -> str:
-    rep = {
-        "siječnja": "01",
-        "veljače": "02",
-        "ožujka": "03",
-        "travnja": "04",
-        "svibnja": "05",
-        "lipnja": "06",
-        "srpnja": "07",
-        "kolovoza": "08",
-        "rujna": "09",
-        "listopada": "10",
-        "studenog": "11",
-        "prosinca": "12",
-    }
-
-    rep = dict((re.escape(k), v) for k, v in rep.items())
-    pattern = re.compile("|".join(rep.keys()))
-
-    return pattern.sub(lambda m: rep[re.escape(m.group(0))], text)
+from utils.helpers import (
+    write_entries_to_database,
+    parse_date_and_time,
+)
+from utils.constants import SCRAPED_WEBSITE_URL
 
 
-def parse_date_days(text: str) -> str:
-    rep = {
-        "1": "01",
-        "2": "02",
-        "3": "03",
-        "4": "04",
-        "5": "05",
-        "6": "06",
-        "7": "07",
-        "8": "08",
-        "9": "09",
-    }
+def scrape():
+    """
+    Simple scraper of Hajduk games from their website.
+    """
 
-    if len(text) == 1:
-        rep = dict((re.escape(k), v) for k, v in rep.items())
-        pattern = re.compile("|".join(rep.keys()))
+    options = Options()
+    options.add_argument("--headless")  # type: ignore
 
-        return pattern.sub(lambda m: rep[re.escape(m.group(0))], text)
+    browser = Chrome(options=options)
+    browser.get(SCRAPED_WEBSITE_URL)
+    browser.implicitly_wait(10)
+    browser.find_element(By.CLASS_NAME, "cookie-popup__close").click()
 
-    return text
+    data: list[dict[str, str]] = []
 
+    schedule_div = browser.find_element(By.ID, "raspored")
+    current_year = str(datetime.now().year)
 
-options = Options()
-options.add_argument("--headless")  # type: ignore
-browser = Chrome(options=options)
+    for element in schedule_div.find_elements(  # type:ignore
+        By.CSS_SELECTOR, "#raspored > *"
+    ):
+        if element.tag_name == "h3":
+            current_year = element.text.split(" ")[1][:-1]
 
-browser.get(url)
-browser.implicitly_wait(10)
+        elif element.tag_name == "a":
+            teams_and_location, date_time = (
+                element.text.split("\n")[1].split("   ")[0].split(", ")
+            )
 
-browser.find_element(By.CLASS_NAME, "cookie-popup__close").click()
+            parsed_date_time = current_year + "-" + parse_date_and_time(date_time)
 
-data: list[dict[str, str]] = []
+            index = 1
+            for i, character in enumerate(teams_and_location):
+                if character.islower():
+                    index = i
+                    break
 
-schedule_div = browser.find_element(By.ID, "raspored")
-current_year = str(datetime.now().year)
+            teams = teams_and_location[: index - 1]
+            location = teams_and_location[index - 1 :]
 
-for element in schedule_div.find_elements(  # type:ignore
-    By.CSS_SELECTOR, "#raspored > *"
-):
-    if element.tag_name == "h3":
-        current_year = element.text.split(" ")[1][:-1]
-    elif element.tag_name == "a":
-        teams_and_location, date_time = (
-            element.text.split("\n")[1].split("   ")[0].split(", ")
-        )
+            entry = {"teams": teams, "location": location, "datetime": parsed_date_time}
+            data.append(entry)
 
-        just_time = date_time.split(" ")[3][:-1] + ":00Z"
-        partially_parsed_date = parse_date_months(date_time.split(" u ")[0]).split(".")[
-            ::-1
-        ]
-        just_date = (
-            partially_parsed_date[0].strip()
-            + "-"
-            + parse_date_days(partially_parsed_date[1])
-        )
+    write_entries_to_database(data)
 
-        date_time_parsed = current_year + "-" + just_date + "T" + just_time
-
-        index = 1
-        for i, character in enumerate(teams_and_location):
-            if character.islower():
-                index = i
-                break
-
-        teams = teams_and_location[: index - 1]
-        location = teams_and_location[index - 1 :]
-
-        entry = {"teams": teams, "location": location, "datetime": date_time_parsed}
-        data.append(entry)
-
-json_path = "/home/animod/Git/hajduk-detector/app/src/mocks"
-json_name = "scraped.json"
-with open(os.path.join(json_path, json_name), "w") as f:
-    json.dump(data, f)
+    browser.close()
+    input("press enter to exit")
 
 
-browser.close()
-input("press any key to exit")
+if __name__ == "__main__":
+    scrape()

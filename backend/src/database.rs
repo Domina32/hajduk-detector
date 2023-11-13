@@ -4,6 +4,7 @@ use dotenvy::dotenv;
 use std::env;
 
 pub mod models;
+pub mod queries;
 pub mod schema;
 
 pub fn establish_connection() -> SqliteConnection {
