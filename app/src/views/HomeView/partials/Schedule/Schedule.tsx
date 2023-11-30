@@ -1,4 +1,3 @@
-import { Table, TableBody, Text } from '@radix-ui/themes';
 import { format } from 'date-fns';
 
 const {
@@ -19,40 +18,34 @@ const Schedule: React.FC<ScheduleProps> = ({ games }) => {
   console.info({ lang: window.navigator.language, locale });
 
   return (
-    <Table.Root variant="surface">
-      <Table.Header>
-        <Table.Row>
-          <Table.ColumnHeaderCell>
-            <Text weight="medium">Date & time</Text>
-          </Table.ColumnHeaderCell>
-          <Table.ColumnHeaderCell>
-            <Text weight="medium">Location</Text>
-          </Table.ColumnHeaderCell>
-          <Table.ColumnHeaderCell>
-            <Text weight="medium">Teams</Text>
-          </Table.ColumnHeaderCell>
-        </Table.Row>
-      </Table.Header>
-      <TableBody>
+    <table>
+      <thead>
+        <tr>
+          <th>
+            <span className="font-medium">Date & time</span>
+          </th>
+          <th>
+            <span className="font-medium">Location</span>
+          </th>
+          <th>
+            <span className="font-medium">Teams</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
         {games.map(({ teams, datetime, location }) => (
-          <Table.Row key={datetime}>
-            <Table.Cell>
-              <Text>
-                {format(new Date(datetime), 'Pp', {
-                  locale,
-                })}
-              </Text>
-            </Table.Cell>
-            <Table.Cell>
-              <Text>{location}</Text>
-            </Table.Cell>
-            <Table.Cell>
-              <Text>{teams}</Text>
-            </Table.Cell>
-          </Table.Row>
+          <tr key={datetime}>
+            <td>
+              {format(new Date(datetime), 'Pp', {
+                locale,
+              })}
+            </td>
+            <td>{location}</td>
+            <td>{teams}</td>
+          </tr>
         ))}
-      </TableBody>
-    </Table.Root>
+      </tbody>
+    </table>
   );
 };
 

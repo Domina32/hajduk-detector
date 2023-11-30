@@ -1,7 +1,6 @@
-import { Button, Container, Dialog, Flex, Text } from '@radix-ui/themes';
+import * as Dialog from '@radix-ui/react-dialog';
 import { add, format, isAfter, isBefore, isToday, startOfToday } from 'date-fns';
 import scraped from '../../mocks/scraped.json';
-import styles from './HomeView.module.css';
 import Schedule from './partials/Schedule/Schedule';
 import { useEffect, useState } from 'react';
 
@@ -48,53 +47,45 @@ const HomeView = () => {
   );
 
   return (
-    <Container size="1">
-      <Flex height="100%" align="start" direction="column">
-        <Dialog.Root>
-          <Dialog.Trigger>
-            <Button m="3">
-              <Text>View full schedule</Text>
-            </Button>
-          </Dialog.Trigger>
+    <div className="mx-auto h-full max-w-xl flex-col items-start">
+      <Dialog.Root>
+        <Dialog.Trigger>View full schedule</Dialog.Trigger>
 
-          <Dialog.Content style={{ maxWidth: 450 }}>
-            <Dialog.Title>
-              <Text>All games</Text>
-            </Dialog.Title>
+        <Dialog.Content style={{ maxWidth: 450 }}>
+          <Dialog.Title>
+            <span>All games</span>
+          </Dialog.Title>
 
-            <Schedule games={schedule} />
+          <Schedule games={schedule} />
 
-            <Flex gap="3" mt="4" justify="end">
-              <Dialog.Close>
-                <Button variant="soft" color="gray">
-                  <Text>Close</Text>
-                </Button>
-              </Dialog.Close>
-            </Flex>
-          </Dialog.Content>
-        </Dialog.Root>
+          <div className="mt-4 justify-end gap-3">
+            <Dialog.Close>Close</Dialog.Close>
+          </div>
+        </Dialog.Content>
+      </Dialog.Root>
 
-        <Flex direction="column" align="start" justify="center" p="4" className={styles.current}>
-          <Text>Today&lsquo;s game:&nbsp;</Text>
+      <div className="flex-col items-start justify-center p-4">
+        <p>
+          <span>Today&lsquo;s game:&nbsp;</span>
           {todayGames.length === 0 ? (
-            <Text>no games today</Text>
+            <span>no games today</span>
           ) : (
             todayGames.map((entry) => (
-              <Flex key={entry.datetime}>
-                <Text>
+              <div key={entry.datetime}>
+                <span>
                   on at {entry.location} at {format(new Date(entry.datetime), 'HH:mm')}
-                </Text>
-              </Flex>
+                </span>
+              </div>
             ))
           )}
-        </Flex>
+        </p>
+      </div>
 
-        <Flex direction="column" width="100%" p="5">
-          <Text>Games in the next month:&nbsp;</Text>
-          <Schedule games={soonGames} />
-        </Flex>
-      </Flex>
-    </Container>
+      <div className="w-full flex-col p-5">
+        <p>Games in the next month:&nbsp;</p>
+        <Schedule games={soonGames} />
+      </div>
+    </div>
   );
 };
 

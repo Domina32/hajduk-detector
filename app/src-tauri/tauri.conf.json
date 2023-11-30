@@ -30,7 +30,7 @@
       {
         "fullscreen": false,
         "resizable": true,
-        "title": "mobile-tauri-boilerplate",
+        "title": "Hajduk detector",
         "width": 800,
         "height": 600
       }
