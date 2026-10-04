@@ -1,19 +1,21 @@
-FROM oven/bun:1 AS frontend-build
+FROM node:22-slim AS frontend-build
+
+# The backend image only serves the built files; no browsers needed here.
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
 WORKDIR /app
 
-COPY package.json bun.lock /app/
+COPY package.json package-lock.json /app/
 COPY frontend/package.json /app/frontend/
+COPY packages/react-email/package.json /app/packages/react-email/
 
-WORKDIR /app/frontend
-
-RUN bun install
+RUN npm ci
 
 COPY ./frontend /app/frontend
 
 ARG VITE_API_URL=
 
-RUN bun run build
+RUN npm run build --workspace=frontend
 
 
 FROM python:3.14

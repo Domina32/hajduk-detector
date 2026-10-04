@@ -30,6 +30,10 @@ repos:
         language: system
         types: [text]
         files: ^frontend/
+        # The root `lint` script delegates with `--workspace`, which runs biome
+        # from `frontend/`; passing repo-root-relative filenames would make it
+        # look for `frontend/frontend/...`.
+        pass_filenames: false
 
       - id: local-ruff-check
         name: ruff check

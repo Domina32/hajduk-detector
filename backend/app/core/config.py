@@ -14,8 +14,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        # Use top level .env file (one level above ./backend/)
-        env_file="../.env",
+        # Use top level .env file (one level above ./backend/), then .env.local
+        # on top of it for real secrets. Files are applied in order, so
+        # .env.local wins; if it does not exist (CI, fresh clone) it is skipped.
+        # Both paths are relative to the working directory, so run from ./backend.
+        env_file=("../.env", "../.env.local"),
         env_ignore_empty=True,
         extra="ignore",
     )
@@ -55,6 +58,7 @@ class Settings(BaseSettings):
         return self
 
     EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
+    API_FOOTBALL_API_KEY: str | None = None
 
     @computed_field  # type: ignore[prop-decorator]
     @property

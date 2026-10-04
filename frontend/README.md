@@ -4,22 +4,22 @@ The frontend is built with [Vite](https://vitejs.dev/), [React](https://react.de
 
 ## Requirements
 
-- [Bun](https://bun.sh/)
+- [Node.js](https://nodejs.org/) 24 or later (npm is included)
 
 ## Quick Start
 
 From the project root, install the dependencies and start the frontend development server:
 
 ```bash
-bun install
-bun run dev
+npm install
+npm run dev
 ```
 
 Then open <http://localhost:5173/> in your browser.
 
 Run `uv run bash scripts/prestart.sh` and `uv run fastapi dev` from the `backend` directory, with PostgreSQL running in Docker Compose. See [../development.md](../development.md) for the complete setup.
 
-To serve the frontend with FastAPI, run `bun run build` from the `frontend` directory and open `http://localhost:8000`.
+To serve the frontend with FastAPI, run `npm run build` from the `frontend` directory and open `http://localhost:8000`.
 
 Check `frontend/package.json` to see the other available commands.
 
@@ -34,8 +34,6 @@ If you are developing an API-only app and want to remove the frontend, you can d
 * In the `backend/Dockerfile` file, remove the frontend build stage and the `COPY --from=frontend-build` instruction.
 
 * In the `compose.override.yml` file, remove the `playwright` service.
-
-* In the `.github/workflows/deploy.yml` file, remove the **Set up Bun**, **Install frontend dependencies**, and **Build frontend** steps.
 
 * In the `.fastapicloudignore` file, remove the `!backend/app/frontend/` entry.
 
@@ -62,7 +60,7 @@ bash ./scripts/generate-client.sh
 * To generate the frontend client, run:
 
 ```bash
-bun run generate-client
+npm run generate-client
 ```
 
 * Commit the changes.
@@ -103,13 +101,13 @@ docker compose up -d --wait backend
 Then, you can run the tests with the following command:
 
 ```bash
-bunx playwright test
+npm test
 ```
 
 You can also run your tests in UI mode to see the browser and interact with it running:
 
 ```bash
-bunx playwright test --ui
+npm run test:ui
 ```
 
 To stop and remove the Docker Compose stack and clean the data created in tests, use the following command:

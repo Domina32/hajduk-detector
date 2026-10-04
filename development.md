@@ -26,8 +26,8 @@ uv run fastapi dev
 In another terminal, from the project root, install the frontend dependencies and start the Vite development server:
 
 ```bash
-bun install
-bun run dev
+npm install
+npm run dev
 ```
 
 Now you can open these URLs:
@@ -47,7 +47,7 @@ The frontend development server uses the backend at `http://localhost:8000`, as 
 Build the frontend from the `frontend` directory:
 
 ```bash
-bun run build
+npm run build
 ```
 
 The build is written to `backend/app/frontend` and served by FastAPI at <http://localhost:8000>. Rebuild the frontend after making frontend changes.
@@ -102,6 +102,34 @@ docker compose watch
 The tracked `.env` file contains local development defaults, passwords, and other configuration. Its hostnames use `localhost` for processes running on your machine. Docker Compose overrides hostnames such as the database and SMTP server with their Compose service names.
 
 Do not store deployment secrets in `.env`. Configure them as described in the [FastAPI Cloud deployment guide](./deployment.md) or the [Docker Compose deployment guide](./deployment-docker-compose.md).
+
+## Real Secrets and `.env.local`
+
+`.env` is committed to git, so anything sensitive belongs in `.env.local` in the project root, which is gitignored. `Settings` loads `../.env` first and `../.env.local` on top of it, so a value in `.env.local` always wins. The same two keys are read by the Playwright tests, and a missing `.env.local` is simply skipped.
+
+Put these in `.env.local`:
+
+```env
+SECRET_KEY=
+FIRST_SUPERUSER_PASSWORD=
+API_FOOTBALL_API_KEY=
+```
+
+Generate `SECRET_KEY` with `openssl rand -hex 32`, choose a real `FIRST_SUPERUSER_PASSWORD`, and paste the key from API-Sports. Because `env_ignore_empty` is on, an empty value is ignored and the fallback in `.env` is used instead.
+
+`POSTGRES_PASSWORD` is the exception: Docker Compose interpolates it out of `.env`, so it has to stay there. It only guards your local development database.
+
+After changing it, update the already-initialised container, otherwise Postgres keeps the password it was created with:
+
+```bash
+docker exec hajduk-detector-db-1 psql -U postgres -c "ALTER USER postgres PASSWORD '$POSTGRES_PASSWORD';"
+```
+
+If you run the full containerised stack rather than the two dev servers, pass both files so the backend container sees the real values too:
+
+```bash
+docker compose --env-file .env --env-file .env.local up -d
+```
 
 ## Pre-commit Hooks and Code Linting
 

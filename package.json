@@ -18,7 +18,6 @@
     "dotenv": "^18.0.5"
   },
   "devDependencies": {
-    "@hey-api/openapi-ts": "^0.99.0",
-    "@playwright/test": "^1.63.0"
+    "@playwright/test": "1.62.1"
   }
 }

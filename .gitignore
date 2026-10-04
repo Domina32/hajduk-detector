@@ -1,3 +1,4 @@
+.venv
 
 node_modules/
 
@@ -10,6 +11,9 @@ backend/app/frontend/
 
 .vscode
 !.vscode/extensions.json
-.github*
+# Local-only backups; `.github/` itself is tracked (it holds the CI workflows)
+.github.bak
+# Secrets live here, never in the tracked .env (see PLAN.md decision 11)
+.env.local
 .agents
 .claude

@@ -4,8 +4,11 @@ import dotenv from "dotenv"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+const rootDir = path.join(__dirname, "../..")
 
-dotenv.config({ path: path.join(__dirname, "../../.env") })
+// Tracked dev defaults first, then the gitignored real secrets, which win.
+dotenv.config({ path: path.join(rootDir, ".env") })
+dotenv.config({ path: path.join(rootDir, ".env.local"), override: true })
 
 function getEnvVar(name: string): string {
   const value = process.env[name]

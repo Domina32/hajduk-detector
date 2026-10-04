@@ -6,6 +6,7 @@
       "**",
       "!**/dist/**/*",
       "!**/node_modules/**/*",
+      "!**/public/**/*",
       "!**/src/routeTree.gen.ts",
       "!**/src/client/**/*",
       "!**/src/components/ui/**/*",

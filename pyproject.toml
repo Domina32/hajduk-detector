@@ -16,7 +16,7 @@ members = ["backend"]
 extend-exclude = [
     "img/",
     "uv.lock",
-    "bun.lock",
+    "package-lock.json",
     "backend/coverage/",
     "backend/htmlcov/",
     "backend/app/frontend/",

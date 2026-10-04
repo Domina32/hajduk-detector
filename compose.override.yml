@@ -25,11 +25,13 @@ services:
       - --api.insecure=true
   db:
     ports:
-      - "5432:5432"
+      # Loopback only: the dev database must not be reachable from the LAN
+      - "127.0.0.1:5432:5432"
 
   adminer:
     ports:
-      - "8080:8080"
+      # Loopback only: a DB admin UI with dev credentials must not face the LAN
+      - "127.0.0.1:8080:8080"
 
   backend:
     ports:
@@ -71,8 +73,10 @@ services:
   mailpit:
     image: axllent/mailpit
     ports:
-      - "8025:8025"
-      - "1025:1025"
+      # Loopback only: dev emails (incl. reset links) must not face the LAN.
+      # Container-to-container traffic uses the Docker network, not these.
+      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:1025:1025"
 
   playwright:
     build:

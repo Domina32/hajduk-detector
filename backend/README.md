@@ -68,6 +68,15 @@ $ uv run bash scripts/test.sh
 
 The tests run with Pytest. Modify existing tests or add new ones in `./backend/tests/`.
 
+> [!WARNING]
+> The test fixtures **delete every `User` and `Item` row** in the database they run against. Run locally, that is your development `app` database, so the suite removes your superuser as a side effect. Restore it with:
+>
+> ```console
+> $ uv run bash scripts/prestart.sh
+> ```
+>
+> `prestart.sh` runs `alembic upgrade head` and then `app/initial_data.py`, which only creates `FIRST_SUPERUSER` if no user with that email exists — existing rows are left alone.
+
 If you use GitHub Actions, the tests will run automatically.
 
 ### Test a Running Stack
@@ -133,7 +142,7 @@ The rendered HTML in `./backend/app/email-templates/` is generated from those co
 To preview the emails while editing them, start the dev server from the root of the project:
 
 ```console
-$ bun run email:dev
+$ npm run email:dev
 ```
 
 Values coming from the backend are declared as Jinja placeholders in the component props, for example `username = "{{ username }}"`. The context for each email is built in `generate_*_email()` in `./backend/app/utils.py`, so a new placeholder needs to be added there too.
@@ -141,5 +150,5 @@ Values coming from the backend are declared as Jinja placeholders in the compone
 Once you are done, regenerate the templates used by the application:
 
 ```console
-$ bun run email:export
+$ npm run email:export
 ```
