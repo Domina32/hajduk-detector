@@ -12,6 +12,14 @@ github-actions = [
 [tool.uv.workspace]
 members = ["backend"]
 
+[tool.ruff.lint.per-file-ignores]
+# Only `backend/` has a pyproject.toml of its own; without a table here, ruff
+# falls back to its built-in defaults for the repo-root tooling, which are much
+# broader than the rules the backend uses. DTZ011 demands a tz-aware timestamp,
+# but the release tooling deliberately stamps a plain local date.
+"scripts/**" = ["DTZ011"]
+"hooks/**" = ["DTZ011"]
+
 [tool.typos.files]
 extend-exclude = [
     "img/",

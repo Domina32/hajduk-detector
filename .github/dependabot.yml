@@ -7,6 +7,10 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Don't pick up an action release the moment it lands; GitHub's default is
+    # no cooldown at all.
+    cooldown:
+      default-days: 7
     # One PR per week for all actions instead of one PR per action.
     groups:
       github-actions:

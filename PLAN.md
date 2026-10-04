@@ -50,8 +50,9 @@ real state of the build.
 - [x] Wire `.env.local` into `Settings` (`env_file=("../.env", "../.env.local")`) and into `frontend/tests/config.ts`, and gitignore it
 - [x] Replace placeholder identity in `.env`: `PROJECT_NAME`, `FIRST_SUPERUSER`, `EMAILS_FROM_EMAIL` → real values; add `API_FOOTBALL_API_KEY` to `Settings` with an empty placeholder
 - [x] `.github/dependabot.yml`: weekly grouped bump of the SHA-pinned GitHub Actions
-- [ ] Paste real `SECRET_KEY`, `FIRST_SUPERUSER_PASSWORD`, `API_FOOTBALL_API_KEY` into `.env.local`, set a real `POSTGRES_PASSWORD` in `.env`, then reset Postgres + the local superuser to match (`development.md` → "Real Secrets and `.env.local`")
-- [ ] Push and confirm both CI jobs are green on `master` (decision 13)
+- [x] Paste real `SECRET_KEY`, `FIRST_SUPERUSER_PASSWORD`, `API_FOOTBALL_API_KEY` into `.env.local`, set a real `POSTGRES_PASSWORD` in `.env`, then reset Postgres + the local superuser to match (`development.md` → "Real Secrets and `.env.local`"). Port 5432 also bound to `127.0.0.1` (`compose.override.yml`), since a real password is only worth having if the socket isn't LAN-reachable
+- [x] Push and confirm both CI jobs are green on `master` (decision 13) — run 37218213673, both jobs passed
+- [x] Install the `prek` git hook (`uv run prek install -f`) and clear the first full `uv run prek run --all-files` sweep
 
 ### M1 — Game model + migration
 
