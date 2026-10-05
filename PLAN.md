@@ -56,10 +56,21 @@ real state of the build.
 
 ### M1 — Game model + migration
 
-- [ ] Add `Game` model to `backend/app/models.py`: `id`, `external_id` (API-Football fixture id, nullable for manual entries, unique), `home_team`, `away_team`, `competition`, `kickoff` (UTC, `DateTime(timezone=True)`), `venue_name`, `venue_id` (external), `status` (`scheduled/postponed/cancelled/finished`), `source` (`api/manual`), `created_at`, `updated_at`
-- [ ] Add public schemas `GameCreate` / `GameUpdate` / `GamePublic` / `GamesPublic`
-- [ ] Generate Alembic migration (`uv run alembic revision --autogenerate -m "add games"`) and review the generated file
-- [ ] Apply migration (`uv run alembic upgrade head`), confirm table exists
+- [x] Add `Game` model to `backend/app/models.py`: `id`, `external_id` (API-Football fixture id, nullable for manual entries, unique), `home_team`, `away_team`, `competition`, `kickoff` (UTC, `DateTime(timezone=True)`), `venue_name`, `venue_id` (external), `status` (`scheduled/postponed/cancelled/finished`), `source` (`api/manual`), `created_at`, `updated_at`
+- [x] Add public schemas `GameCreate` / `GameUpdate` / `GamePublic` / `GamesPublic`
+- [x] Generate Alembic migration (`uv run alembic revision --autogenerate -m "add games"`) and review the generated file
+- [x] Apply migration (`uv run alembic upgrade head`), confirm table exists
+
+> **M1 notes** (decisions worth keeping): `GameStatus` / `GameSource` are Python
+> `str`-mixin enums → PostgreSQL native `ENUM` types (`gamestatus`,
+> `gamesource`), so adding a value later needs an `ALTER TYPE` migration.
+> `updated_at` uses `onupdate` (`sa_column_kwargs`) — application-side only,
+> invisible to Alembic; verified with an in-memory SQLite round-trip test
+> (`created_at` must not move, `updated_at` must). `locked` (sync must not
+> overwrite) is schema-only until M4 enforces it in the sync loop.
+> Autogenerate's `downgrade()` did not drop the two enum types; hand-added
+> `sa.Enum(...).drop(checkfirst=True)` and verified with
+> `downgrade -1` / `upgrade head`.
 
 ### M2 — API routes
 

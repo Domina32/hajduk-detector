@@ -1,9 +1,22 @@
+import enum
 import uuid
 from datetime import UTC, datetime
 
 from pydantic import EmailStr
 from sqlalchemy import DateTime
 from sqlmodel import Field, Relationship, SQLModel
+
+
+class GameStatus(enum.StrEnum):
+    scheduled = "scheduled"
+    postponed = "postponed"
+    cancelled = "cancelled"
+    finished = "finished"
+
+
+class GameSource(enum.StrEnum):
+    api = "api"
+    manual = "manual"
 
 
 def get_datetime_utc() -> datetime:
@@ -109,6 +122,58 @@ class ItemPublic(ItemBase):
 
 class ItemsPublic(SQLModel):
     data: list[ItemPublic]
+    count: int
+
+
+class GameBase(SQLModel):
+    external_id: str | None = Field(unique=True, default=None, max_length=255)
+    home_team: str = Field(max_length=255)
+    away_team: str = Field(max_length=255)
+    competition: str = Field(max_length=255)
+    kickoff: datetime = Field(sa_type=DateTime(timezone=True))  # type: ignore
+    venue_name: str | None = Field(default=None, max_length=255)
+    venue_id: str | None = Field(default=None, max_length=255)
+    status: GameStatus = Field(default=GameStatus.scheduled)
+    source: GameSource = Field(default=GameSource.manual)
+    locked: bool = Field(default=False)
+
+
+class GameCreate(GameBase):
+    pass
+
+
+class GameUpdate(SQLModel):
+    home_team: str | None = Field(default=None, max_length=255)
+    away_team: str | None = Field(default=None, max_length=255)
+    competition: str | None = Field(default=None, max_length=255)
+    kickoff: datetime | None = Field(default=None)
+    venue_name: str | None = Field(default=None, max_length=255)
+    venue_id: str | None = Field(default=None, max_length=255)
+    status: GameStatus = Field(default=GameStatus.scheduled)
+    locked: bool = Field(default=False)
+
+
+class Game(GameBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    created_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+    updated_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+        sa_column_kwargs={"onupdate": get_datetime_utc},
+    )
+
+
+class GamePublic(GameBase):
+    id: uuid.UUID
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class GamesPublic(SQLModel):
+    data: list[GamePublic]
     count: int
 
 
