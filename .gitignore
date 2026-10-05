@@ -1,19 +1,26 @@
+# Environments & caches
 .venv
+.mypy_cache
+.ruff_cache
 
-node_modules/
-
+# Frontend assets
 backend/app/frontend/
 
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
+# Tests
+*test-results*
+*playwright-report*
+*blob-report*
+*playwright/.cache*
+*.pytest_cache*
 
+# Editor
 .vscode
 !.vscode/extensions.json
+
 # Local-only backups; `.github/` itself is tracked (it holds the CI workflows)
 .github.bak
-# Secrets live here, never in the tracked .env (see PLAN.md decision 11)
+
+# Secrets
 .env.local
 .agents
 .claude
