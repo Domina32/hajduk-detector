@@ -5,6 +5,7 @@
 
 # Frontend assets
 backend/app/frontend/
+node_modules
 
 # Tests
 *test-results*
