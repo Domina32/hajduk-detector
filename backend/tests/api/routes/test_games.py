@@ -6,9 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from app import crud
 from app.core.config import settings
-from app.models import Game, GameCreate
 from tests.utils.game import create_game_at, create_random_game
 
 
