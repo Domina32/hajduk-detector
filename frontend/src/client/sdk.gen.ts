@@ -2,7 +2,7 @@
 
 import { type Client, type Options as Options2, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { itemsCreateItemData, itemsCreateItemErrors, itemsCreateItemResponses, itemsDeleteItemData, itemsDeleteItemErrors, itemsDeleteItemResponses, itemsReadItemData, itemsReadItemErrors, itemsReadItemResponses, itemsReadItemsData, itemsReadItemsErrors, itemsReadItemsResponses, itemsUpdateItemData, itemsUpdateItemErrors, itemsUpdateItemResponses, loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
+import type { gamesCreateGameData, gamesCreateGameErrors, gamesCreateGameResponses, gamesDeleteGameData, gamesDeleteGameErrors, gamesDeleteGameResponses, gamesReadGameData, gamesReadGameErrors, gamesReadGameResponses, gamesReadGamesData, gamesReadGamesErrors, gamesReadGamesResponses, gamesUpdateGameData, gamesUpdateGameErrors, gamesUpdateGameResponses, itemsCreateItemData, itemsCreateItemErrors, itemsCreateItemResponses, itemsDeleteItemData, itemsDeleteItemErrors, itemsDeleteItemResponses, itemsReadItemData, itemsReadItemErrors, itemsReadItemResponses, itemsUpdateItemData, itemsUpdateItemErrors, itemsUpdateItemResponses, loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -286,38 +286,6 @@ export class UtilsService {
 
 export class ItemsService {
     /**
-     * Read Items
-     *
-     * Retrieve items.
-     */
-    public static readItems<ThrowOnError extends boolean = true>(options?: Options<itemsReadItemsData, ThrowOnError>) {
-        return (options?.client ?? client).get<itemsReadItemsResponses, itemsReadItemsErrors, ThrowOnError>({
-            responseType: 'json',
-            security: [{ scheme: 'bearer', type: 'http' }],
-            url: '/api/v1/items/',
-            ...options
-        });
-    }
-    
-    /**
-     * Create Item
-     *
-     * Create new item.
-     */
-    public static createItem<ThrowOnError extends boolean = true>(options: Options<itemsCreateItemData, ThrowOnError>) {
-        return (options.client ?? client).post<itemsCreateItemResponses, itemsCreateItemErrors, ThrowOnError>({
-            responseType: 'json',
-            security: [{ scheme: 'bearer', type: 'http' }],
-            url: '/api/v1/items/',
-            ...options,
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers
-            }
-        });
-    }
-    
-    /**
      * Delete Item
      *
      * Delete an item.
@@ -355,6 +323,104 @@ export class ItemsService {
             responseType: 'json',
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/v1/items/{id}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Create Item
+     *
+     * Create new item.
+     */
+    public static createItem<ThrowOnError extends boolean = true>(options: Options<itemsCreateItemData, ThrowOnError>) {
+        return (options.client ?? client).post<itemsCreateItemResponses, itemsCreateItemErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/items/',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+}
+
+export class GamesService {
+    /**
+     * Read Games
+     *
+     * Retrieve games.
+     */
+    public static readGames<ThrowOnError extends boolean = true>(options?: Options<gamesReadGamesData, ThrowOnError>) {
+        return (options?.client ?? client).get<gamesReadGamesResponses, gamesReadGamesErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/games/',
+            ...options
+        });
+    }
+    
+    /**
+     * Create Game
+     *
+     * Create new game.
+     */
+    public static createGame<ThrowOnError extends boolean = true>(options: Options<gamesCreateGameData, ThrowOnError>) {
+        return (options.client ?? client).post<gamesCreateGameResponses, gamesCreateGameErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/games/',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Delete Game
+     *
+     * Delete a game.
+     */
+    public static deleteGame<ThrowOnError extends boolean = true>(options: Options<gamesDeleteGameData, ThrowOnError>) {
+        return (options.client ?? client).delete<gamesDeleteGameResponses, gamesDeleteGameErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/games/{id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Game
+     *
+     * Get game by ID.
+     */
+    public static readGame<ThrowOnError extends boolean = true>(options: Options<gamesReadGameData, ThrowOnError>) {
+        return (options.client ?? client).get<gamesReadGameResponses, gamesReadGameErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/games/{id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Update Game
+     *
+     * Update a game.
+     */
+    public static updateGame<ThrowOnError extends boolean = true>(options: Options<gamesUpdateGameData, ThrowOnError>) {
+        return (options.client ?? client).patch<gamesUpdateGameResponses, gamesUpdateGameErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/games/{id}',
             ...options,
             headers: {
                 'Content-Type': 'application/json',

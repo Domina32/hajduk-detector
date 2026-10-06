@@ -35,6 +35,157 @@ export type Body_login_login_access_token = {
 };
 
 /**
+ * GameCreate
+ */
+export type GameCreate = {
+    /**
+     * External Id
+     */
+    external_id?: string | null;
+    /**
+     * Home Team
+     */
+    home_team: string;
+    /**
+     * Away Team
+     */
+    away_team: string;
+    /**
+     * Competition
+     */
+    competition: string;
+    /**
+     * Kickoff
+     */
+    kickoff: string;
+    /**
+     * Venue Name
+     */
+    venue_name?: string | null;
+    /**
+     * Venue Id
+     */
+    venue_id?: string | null;
+    status?: GameStatus;
+    source?: GameSource;
+    /**
+     * Locked
+     */
+    locked?: boolean;
+};
+
+/**
+ * GamePublic
+ */
+export type GamePublic = {
+    /**
+     * External Id
+     */
+    external_id?: string | null;
+    /**
+     * Home Team
+     */
+    home_team: string;
+    /**
+     * Away Team
+     */
+    away_team: string;
+    /**
+     * Competition
+     */
+    competition: string;
+    /**
+     * Kickoff
+     */
+    kickoff: string;
+    /**
+     * Venue Name
+     */
+    venue_name?: string | null;
+    /**
+     * Venue Id
+     */
+    venue_id?: string | null;
+    status?: GameStatus;
+    source?: GameSource;
+    /**
+     * Locked
+     */
+    locked?: boolean;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Created At
+     */
+    created_at?: string | null;
+    /**
+     * Updated At
+     */
+    updated_at?: string | null;
+};
+
+/**
+ * GameSource
+ */
+export type GameSource = 'api' | 'manual';
+
+/**
+ * GameStatus
+ */
+export type GameStatus = 'scheduled' | 'postponed' | 'cancelled' | 'finished';
+
+/**
+ * GameUpdate
+ */
+export type GameUpdate = {
+    /**
+     * Home Team
+     */
+    home_team?: string | null;
+    /**
+     * Away Team
+     */
+    away_team?: string | null;
+    /**
+     * Competition
+     */
+    competition?: string | null;
+    /**
+     * Kickoff
+     */
+    kickoff?: string | null;
+    /**
+     * Venue Name
+     */
+    venue_name?: string | null;
+    /**
+     * Venue Id
+     */
+    venue_id?: string | null;
+    status?: GameStatus;
+    /**
+     * Locked
+     */
+    locked?: boolean;
+};
+
+/**
+ * GamesPublic
+ */
+export type GamesPublic = {
+    /**
+     * Data
+     */
+    data: Array<GamePublic>;
+    /**
+     * Count
+     */
+    count: number;
+};
+
+/**
  * HTTPValidationError
  */
 export type HTTPValidationError = {
@@ -96,20 +247,6 @@ export type ItemUpdate = {
      * Description
      */
     description?: string | null;
-};
-
-/**
- * ItemsPublic
- */
-export type ItemsPublic = {
-    /**
-     * Data
-     */
-    data: Array<ItemPublic>;
-    /**
-     * Count
-     */
-    count: number;
 };
 
 /**
@@ -772,65 +909,6 @@ export type utilsHealthCheckResponses = {
 
 export type utilsHealthCheckResponse = utilsHealthCheckResponses[keyof utilsHealthCheckResponses];
 
-export type itemsReadItemsData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Skip
-         */
-        skip?: number;
-        /**
-         * Limit
-         */
-        limit?: number;
-    };
-    url: '/api/v1/items/';
-};
-
-export type itemsReadItemsErrors = {
-    /**
-     * Validation Error
-     */
-    422: HTTPValidationError;
-};
-
-export type itemsReadItemsError = itemsReadItemsErrors[keyof itemsReadItemsErrors];
-
-export type itemsReadItemsResponses = {
-    /**
-     * Successful Response
-     */
-    200: ItemsPublic;
-};
-
-export type itemsReadItemsResponse = itemsReadItemsResponses[keyof itemsReadItemsResponses];
-
-export type itemsCreateItemData = {
-    body: ItemCreate;
-    path?: never;
-    query?: never;
-    url: '/api/v1/items/';
-};
-
-export type itemsCreateItemErrors = {
-    /**
-     * Validation Error
-     */
-    422: HTTPValidationError;
-};
-
-export type itemsCreateItemError = itemsCreateItemErrors[keyof itemsCreateItemErrors];
-
-export type itemsCreateItemResponses = {
-    /**
-     * Successful Response
-     */
-    200: ItemPublic;
-};
-
-export type itemsCreateItemResponse = itemsCreateItemResponses[keyof itemsCreateItemResponses];
-
 export type itemsDeleteItemData = {
     body?: never;
     path: {
@@ -920,6 +998,184 @@ export type itemsUpdateItemResponses = {
 };
 
 export type itemsUpdateItemResponse = itemsUpdateItemResponses[keyof itemsUpdateItemResponses];
+
+export type itemsCreateItemData = {
+    body: ItemCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/items/';
+};
+
+export type itemsCreateItemErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type itemsCreateItemError = itemsCreateItemErrors[keyof itemsCreateItemErrors];
+
+export type itemsCreateItemResponses = {
+    /**
+     * Successful Response
+     */
+    200: ItemPublic;
+};
+
+export type itemsCreateItemResponse = itemsCreateItemResponses[keyof itemsCreateItemResponses];
+
+export type gamesReadGamesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * From
+         */
+        from?: string | null;
+        /**
+         * To
+         */
+        to?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/games/';
+};
+
+export type gamesReadGamesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type gamesReadGamesError = gamesReadGamesErrors[keyof gamesReadGamesErrors];
+
+export type gamesReadGamesResponses = {
+    /**
+     * Successful Response
+     */
+    200: GamesPublic;
+};
+
+export type gamesReadGamesResponse = gamesReadGamesResponses[keyof gamesReadGamesResponses];
+
+export type gamesCreateGameData = {
+    body: GameCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/games/';
+};
+
+export type gamesCreateGameErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type gamesCreateGameError = gamesCreateGameErrors[keyof gamesCreateGameErrors];
+
+export type gamesCreateGameResponses = {
+    /**
+     * Successful Response
+     */
+    200: GamePublic;
+};
+
+export type gamesCreateGameResponse = gamesCreateGameResponses[keyof gamesCreateGameResponses];
+
+export type gamesDeleteGameData = {
+    body?: never;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/games/{id}';
+};
+
+export type gamesDeleteGameErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type gamesDeleteGameError = gamesDeleteGameErrors[keyof gamesDeleteGameErrors];
+
+export type gamesDeleteGameResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type gamesDeleteGameResponse = gamesDeleteGameResponses[keyof gamesDeleteGameResponses];
+
+export type gamesReadGameData = {
+    body?: never;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/games/{id}';
+};
+
+export type gamesReadGameErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type gamesReadGameError = gamesReadGameErrors[keyof gamesReadGameErrors];
+
+export type gamesReadGameResponses = {
+    /**
+     * Successful Response
+     */
+    200: GamePublic;
+};
+
+export type gamesReadGameResponse = gamesReadGameResponses[keyof gamesReadGameResponses];
+
+export type gamesUpdateGameData = {
+    body: GameUpdate;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/games/{id}';
+};
+
+export type gamesUpdateGameErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type gamesUpdateGameError = gamesUpdateGameErrors[keyof gamesUpdateGameErrors];
+
+export type gamesUpdateGameResponses = {
+    /**
+     * Successful Response
+     */
+    200: GamePublic;
+};
+
+export type gamesUpdateGameResponse = gamesUpdateGameResponses[keyof gamesUpdateGameResponses];
 
 export type privateCreateUserData = {
     body: PrivateUserCreate;
