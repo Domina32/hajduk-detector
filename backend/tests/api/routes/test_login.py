@@ -1,5 +1,7 @@
+from collections.abc import Generator
 from unittest.mock import patch
 
+import pytest
 from fastapi.testclient import TestClient
 from pwdlib.hashers.bcrypt import BcryptHasher
 from sqlmodel import Session
@@ -11,6 +13,21 @@ from app.models import User, UserCreate
 from app.utils import generate_password_reset_token
 from tests.utils.user import user_authentication_headers
 from tests.utils.utils import random_email, random_lower_string
+
+# Setup slots -- request one as a test parameter to use it. Every scope,
+# with worked examples: tests/api/routes/test_template.py
+
+
+@pytest.fixture(scope="module")
+def per_file_setup() -> Generator[None]:
+    """Once per file: above yield = setup, below = teardown."""
+    yield
+
+
+@pytest.fixture
+def per_test_setup() -> Generator[None]:
+    """Per test (default scope): same yield pattern."""
+    yield
 
 
 def test_get_access_token(client: TestClient) -> None:

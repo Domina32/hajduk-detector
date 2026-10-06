@@ -1,6 +1,8 @@
 import uuid
+from collections.abc import Generator
 from unittest.mock import patch
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 
@@ -10,6 +12,21 @@ from app.core.security import verify_password
 from app.models import User, UserCreate
 from tests.utils.user import create_random_user
 from tests.utils.utils import random_email, random_lower_string
+
+# Setup slots -- request one as a test parameter to use it. Every scope,
+# with worked examples: tests/api/routes/test_template.py
+
+
+@pytest.fixture(scope="module")
+def per_file_setup() -> Generator[None]:
+    """Once per file: above yield = setup, below = teardown."""
+    yield
+
+
+@pytest.fixture
+def per_test_setup() -> Generator[None]:
+    """Per test (default scope): same yield pattern."""
+    yield
 
 
 def test_get_users_superuser_me(
