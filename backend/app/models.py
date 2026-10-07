@@ -3,7 +3,7 @@ import uuid
 from datetime import UTC, datetime
 
 from pydantic import EmailStr
-from sqlalchemy import DateTime
+from sqlalchemy import JSON, DateTime
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -175,6 +175,23 @@ class GamePublic(GameBase):
 class GamesPublic(SQLModel):
     data: list[GamePublic]
     count: int
+
+
+class SyncRunBase(SQLModel):
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    rounds: list[int] = Field(default_factory=list, sa_type=JSON)
+    created: int = 0
+    updated: int = 0
+    error: str | None = None
+
+
+class SyncRun(SyncRunBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+
+
+class SyncRunPublic(SyncRunBase):
+    id: uuid.UUID
 
 
 # Generic message
