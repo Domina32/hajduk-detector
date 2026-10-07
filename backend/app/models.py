@@ -194,6 +194,10 @@ class SyncRunPublic(SyncRunBase):
     id: uuid.UUID
 
 
+class SyncRequest(SQLModel):
+    rounds: list[int] | None = None
+
+
 # Generic message
 class Message(SQLModel):
     message: str
