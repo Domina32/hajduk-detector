@@ -11,7 +11,21 @@ from app.api.deps import (
     get_current_active_superuser,
     get_current_user,
 )
-from app.models import Game, GameCreate, GamePublic, GamesPublic, GameUpdate, Message
+from app.models import (
+    Game,
+    GameCreate,
+    GamePublic,
+    GamesPublic,
+    GameUpdate,
+    Message,
+    SyncRequest,
+    SyncRun,
+    SyncRunPublic,
+    get_datetime_utc,
+)
+from app.services.sportsdb import SPORTSDB_TEAM_ID, sync_events
+
+DEFAULT_ROUNDS = [9, 10, 11]
 
 router = APIRouter(
     prefix="/games",
@@ -49,6 +63,50 @@ def read_games(
 
     games_public = [GamePublic.model_validate(game) for game in games]
     return GamesPublic(data=games_public, count=count)
+
+
+@router.post(
+    "/sync",
+    dependencies=[Depends(get_current_active_superuser)],
+    response_model=SyncRunPublic,
+)
+def create_sync_run(*, session: SessionDep, body: SyncRequest | None = None) -> Any:
+    rounds = DEFAULT_ROUNDS
+    if body is not None and body.rounds is not None:
+        rounds = body.rounds
+
+    run = SyncRun(rounds=rounds, started_at=get_datetime_utc())
+    session.add(run)
+    session.commit()
+    session.refresh(run)
+    try:
+        result = sync_events(
+            session, round_numbers=rounds, team_ids=(SPORTSDB_TEAM_ID,)
+        )
+    except Exception as e:
+        run.error = str(e)
+        run.finished_at = get_datetime_utc()
+        session.add(run)
+        session.commit()
+        session.refresh(run)
+        raise HTTPException(status_code=500, detail=f"Sync failed: {e}")
+    run.created = result["created"]
+    run.updated = result["updated"]
+    run.finished_at = get_datetime_utc()
+    session.add(run)
+    session.commit()
+    session.refresh(run)
+    return run
+
+
+@router.get("/sync/status", response_model=SyncRunPublic)
+def get_sync_run_status(*, session: SessionDep) -> Any:
+    sync_run = session.exec(
+        select(SyncRun).order_by(col(SyncRun.started_at).desc())
+    ).first()
+    if sync_run is None:
+        raise HTTPException(status_code=404, detail="No sync has run yet")
+    return sync_run
 
 
 @router.get("/{id}", response_model=GamePublic)

@@ -112,7 +112,7 @@ real state of the build.
 - [ ] APScheduler wiring in `backend/app/main.py`: daily fixture sync + hourly reminder check (skipped when `FASTAPI_ENV != development`… re-evaluate: should run in prod too, so gate on a `SCHEDULER_ENABLED` setting instead)
 - [ ] `Notification` table: `user_id`, `game_id`, `kind` (`24h`/`2h`), `sent_at`, unique constraint — dedupe so a user gets each reminder once
 - [ ] react-email template `packages/react-email/emails/game_reminder.tsx` (teams, kickoff local time, venue, link to the Sheet)
-- [ ] `POST /games/sync` (superuser, manual trigger) + `GET /games/sync/status` (carried over from M2) — sync writes DB **and** refreshes the Sheet (M3), records counts/errors for the status endpoint
+- [x] `POST /games/sync` (superuser, manual trigger, optional `rounds` body defaulting to `[9, 10, 11]`) + `GET /games/sync/status` (latest `SyncRun` row, 404 when never synced) — routes in `games.py` above `/{id}`, `SyncRun` table + migration, route tests in `tests/api/routes/test_sync.py` (monkeypatched, no network)
 - [ ] Reminder job: find games starting in ~24h and ~2h, send to active users, record in `Notification`
 - [ ] Test end-to-end with Mailpit (`http://localhost:8025`)
 
