@@ -1,8 +1,13 @@
 # Consolidated task runner. `just` lists recipes; `just <recipe>` runs one.
-# Local dev = Postgres + Mailpit in compose, FastAPI + Vite on the host.
+# Local dev = Postgres + Mailpit in compose.
 # Full stack in compose = `just stack` (uses compose.override.yml automatically).
 
 set dotenv-load := true
+# Load `.env.local` (real secrets) instead of `.env` (placeholders): exported
+# vars beat Settings' own file lookup, so exporting `.env` would shadow the
+# real values with "changethis". Compose reads `.env` itself; Settings reads
+# both files itself; nothing in these recipes needs `.env` exported.
+set dotenv-path := ".env.local"
 
 _default:
     @just --list --unsorted
@@ -57,17 +62,14 @@ migrate: db
 run-backend: db migrate
     cd backend && uv run fastapi dev
 
-# Frontend dev server at :5173. Expects backend at :8000.
-run-frontend:
-    npm run dev --workspace=frontend
 
-# Both dev servers: backend in background, frontend in foreground.
+
+# Dev server: backend in foreground (Ctrl-C stops it cleanly).
 dev: db migrate
-    mkdir -p /tmp/opencode
-    (cd backend && exec uv run fastapi dev) & echo $! > /tmp/opencode/backend-dev.pid
-    npm run dev --workspace=frontend; kill "$(cat /tmp/opencode/backend-dev.pid)" 2>/dev/null || true
+    cd backend && uv run fastapi dev
 
-# Full containerised stack (backend+frontend served at :8000). Stop local :8000 first.
+
+# Full containerised stack (backend served at :8000). Stop local :8000 first.
 stack: db
     docker compose run --rm backend bash scripts/prestart.sh
     docker compose watch
@@ -77,9 +79,7 @@ stack-down:
 
 # ── Codegen / DB ───────────────────────────────────────────────────────
 
-# Regenerate the frontend API client from the backend OpenAPI spec.
-generate-client:
-    ./scripts/generate-client.sh
+
 
 # New autogenerate migration. `just revision "add games"`.
 revision message="auto":
@@ -99,17 +99,9 @@ downgrade:
 test-backend: db
     cd backend && FASTAPI_ENV=development uv run bash scripts/tests-start.sh "local"
 
-# Frontend Playwright vs a local uvicorn on :8000 (mirrors CI frontend job).
-test-frontend: db migrate
-    mkdir -p /tmp/opencode
-    npm ci --silent
-    npx playwright install --with-deps chromium
-    cd backend && (uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 & echo $! > /tmp/opencode/ci-backend.pid)
-    curl --retry 30 --retry-delay 2 --retry-all-errors --fail http://localhost:8000/api/v1/utils/health-check/
-    npm test; status=$?; kill "$(cat /tmp/opencode/ci-backend.pid)" 2>/dev/null || true; exit $status
 
-# Everything: backend + frontend suites.
-test: test-backend test-frontend
+# Everything: backend suites.
+test: test-backend
 
 # ── Lint / checks ──────────────────────────────────────────────────────
 
@@ -121,7 +113,7 @@ check:
 lint:
     uv run ruff check backend/app
     uv run ruff format --check backend/app
-    npm run lint --workspace=frontend
+
 
 # Backend type checks (mypy strict + ty) as run by prek.
 typecheck:
@@ -136,4 +128,4 @@ nuke:
 
 # Drop node_modules / venv artefacts (recreated by `just setup`).
 clean:
-    rm -rf node_modules frontend/node_modules .venv backend/.venv
+    rm -rf  .venv backend/.venv

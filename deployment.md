@@ -44,7 +44,7 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 
 ## Configure Continuous Deployment
 
-The included `.github/workflows/deploy.yml` workflow builds the frontend, prepares the database, and deploys the application whenever changes are pushed to `master`. You can also run it manually from the **Actions** tab.
+The included `.github/workflows/deploy.yml` workflow prepares the database and deploys the application whenever changes are pushed to `master`. You can also run it manually from the **Actions** tab.
 
 Log in to FastAPI Cloud and configure the [deploy token](https://fastapicloud.com/docs/advanced-features/deploy-tokens/) and application ID as GitHub repository secrets:
 
@@ -70,15 +70,14 @@ Use the same values configured in FastAPI Cloud. For `DATABASE_URL`, use the con
 
 The deployment workflow performs these steps:
 
-1. Installs and builds the frontend into `backend/app/frontend`.
-2. Runs `backend/scripts/prestart.sh` to apply database migrations and create the first superuser.
-3. Deploys the project with `uv run fastapi deploy`.
+1. Runs `backend/scripts/prestart.sh` to apply database migrations and create the first superuser.
+2. Deploys the project with `uv run fastapi deploy`.
 
 ## URLs
 
 Replace `your-app.fastapicloud.dev` with the URL of your FastAPI Cloud application.
 
-Application (frontend and API): `https://your-app.fastapicloud.dev`
+Application (API): `https://your-app.fastapicloud.dev`
 
 Interactive API docs: `https://your-app.fastapicloud.dev/docs`
 

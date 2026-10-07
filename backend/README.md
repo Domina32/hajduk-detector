@@ -37,9 +37,9 @@ There are already configurations in place to run the backend through the VS Code
 
 The setup is also already configured so you can run the tests through the VS Code Python tests tab.
 
-## Full Stack with Docker Compose
+## Backend in Docker Compose
 
-To run the backend and built frontend in Docker Compose:
+To run the backend in Docker Compose:
 
 ```console
 $ docker compose run --rm backend bash scripts/prestart.sh
@@ -68,14 +68,14 @@ $ uv run bash scripts/test.sh
 
 The tests run with Pytest. Modify existing tests or add new ones in `./backend/tests/`.
 
-> [!WARNING]
-> The test fixtures **delete every `User` and `Item` row** in the database they run against. Run locally, that is your development `app` database, so the suite removes your superuser as a side effect. Restore it with:
+> [!NOTE]
+> The test suite runs against a dedicated `app_test` database (derived from
+> `DATABASE_URL`, see `tests/conftest.py`) — never against your development
+> `app` database. The session fixture wipes `Game`/`Item`/`User` rows before
+> *and* after the run, so no test users accumulate anywhere.
 >
-> ```console
-> $ uv run bash scripts/prestart.sh
-> ```
->
-> `prestart.sh` runs `alembic upgrade head` and then `app/initial_data.py`, which only creates `FIRST_SUPERUSER` if no user with that email exists — existing rows are left alone.
+> If your dev `app` database still holds leftover test users from before the
+> `app_test` isolation, delete them manually; the suite will not touch them.
 
 If you use GitHub Actions, the tests will run automatically.
 

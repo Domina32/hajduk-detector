@@ -58,8 +58,6 @@ docker compose -f compose.yml -f compose.deploy.yml up -d
 
 The `compose.deploy.yml` file adds HTTPS and automatic certificate handling to the shared `compose.yml` configuration. Explicitly listing both files excludes the local settings from `compose.override.yml`.
 
-The backend Docker image builds the frontend, so the server does not need Node.js or prebuilt frontend files.
-
 ## Deploy with GitHub Actions
 
 The included `.github/workflows/deploy-docker-compose.yml` workflow runs the deployment commands on the server when manually triggered from GitHub Actions.
@@ -122,7 +120,7 @@ When the runner is online, open the repository's **Actions** tab, select **Deplo
 
 Replace `fastapi-project.example.com` with your domain.
 
-Application (frontend and API): `https://fastapi-project.example.com`
+Application (API): `https://fastapi-project.example.com`
 
 Interactive API docs: `https://fastapi-project.example.com/docs`
 

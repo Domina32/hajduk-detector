@@ -27,9 +27,6 @@ extend-exclude = [
     "package-lock.json",
     "backend/coverage/",
     "backend/htmlcov/",
-    "backend/app/frontend/",
-    "frontend/dist/",
-    "frontend/public/assets/images/",
 ]
 
 [tool.typos.default]
