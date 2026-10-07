@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     FRONTEND_HOST: str = "http://localhost:5173"
     FASTAPI_ENV: Literal["development"] | None = None
+    THESPORTSDB_API_KEY: str = "123"
 
     PROJECT_NAME: str
     SENTRY_DSN: HttpUrl | None = None
@@ -58,7 +59,6 @@ class Settings(BaseSettings):
         return self
 
     EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
-    API_FOOTBALL_API_KEY: str | None = None
 
     @computed_field  # type: ignore[prop-decorator]
     @property
