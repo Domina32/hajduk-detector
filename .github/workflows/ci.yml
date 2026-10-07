@@ -56,10 +56,6 @@ jobs:
       - name: Start PostgreSQL and Mailpit
         run: docker compose up -d --wait db mailpit
 
-      - name: Migrate database and create the superuser
-        run: uv run bash scripts/prestart.sh
-        working-directory: backend
-
       - name: Run tests
         run: uv run bash scripts/tests-start.sh "Coverage for ${{ github.sha }}"
         working-directory: backend
