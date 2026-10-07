@@ -91,7 +91,6 @@ Put these in `.env.local`:
 ```env
 SECRET_KEY=
 FIRST_SUPERUSER_PASSWORD=
-API_FOOTBALL_API_KEY=
 ```
 
 Generate `SECRET_KEY` with `openssl rand -hex 32`, choose a real `FIRST_SUPERUSER_PASSWORD`, and paste the key from API-Sports. Because `env_ignore_empty` is on, an empty value is ignored and the fallback in `.env` is used instead.

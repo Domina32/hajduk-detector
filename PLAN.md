@@ -5,7 +5,7 @@ detected by the backend and published to a **shared Google Sheet**, with email
 reminders before each game.
 
 > **Pivot (2026-10-07): the app frontend is removed.** There is no dashboard
-> UI. The backend remains the system of record (Game model, API-Football sync,
+> UI. The backend remains the system of record (Game model, fixture sync,
 > API routes, email reminders); presentation is a Google Sheet written via a
 > dedicated Gmail account with OAuth. All "dashboard page" items below are
 > superseded by M3.
@@ -20,15 +20,15 @@ real state of the build.
 
 | # | Decision | Choice | Why |
 |---|----------|--------|-----|
-| 1 | Data source | **API-Football free tier** (100 req/day, API key in `.env`) | Full HNL fixture list in ~1 call/day; every fixture carries a `venue` object we filter to Poljud. Verified no free alternative covers HNL: football-data.org free tier excludes Croatia entirely. |
-| 2 | Fallback data source | **Manual admin entry** (superuser CRUD API) | Plan B if the API key runs out or the API changes. Built as part of the normal CRUD flow, so it costs almost nothing extra. |
-| 3 | Dev cross-check | **TheSportsDB** free key `123` (no signup) | Used only while developing, to sanity-check that API-Football data is complete. Not called in production. Known quirks: truncated free results and inconsistent kickoff times. |
+| 1 | Data source | **TheSportsDB, free key `123`** (no account, no payment) — replaces API-Football, whose free tier covers only 2022–2024 (verified 2026-10-07, see resolved question below). **Round-scoped polling**: `eventsround.php?id=4629&r=<n>&s=2026-2027` (league-wide, untruncated — full 5-game rounds verified) for the current + next 1–2 rounds, filtered by venue `idVenue=18136` (`Gradski stadion Poljud`), **plus** team-scoped `eventsnext.php?id=134019` (Hajduk Split) to catch cup/Europe home games, which live under other league ids. `eventsnextleague.php` is unusable on the free tier (returns 1 event — truncation quirk). | Must cover the *current* HNL season with venue info per fixture. football-data.org free tier excludes Croatia entirely. |
+| 2 | Fallback data source | **Manual admin entry** (superuser CRUD API), then a scrape of hajduk.hr / hnl.hr if TheSportsDB coverage is unusable | Plan B if the key/Tier doesn't pan out. Built as part of the normal CRUD flow, so it costs almost nothing extra. |
+| 3 | Dev cross-check | ~~TheSportsDB free key `123`~~ — promoted to primary source (decision 1); cross-check role dropped | — |
 | 4 | Scope of games | **Venue-filtered**: any game whose venue is Poljud | Covers Hajduk home games *and* national team / cup games at the same stadium. |
 | 5 | Read access | **Shared data — all logged-in users see the same games** | Unlike template `items` (owner-scoped), the whole point is one unified place. Writes restricted to superusers. |
 | 6 | Notifications | **Email + Google Sheet** | Email via existing SMTP + react-email (24h/2h reminders). The Sheet is the always-visible fixture list. No push/realtime in v1. |
 | 7 | Scheduler | **APScheduler in-process** with FastAPI | Single deployment, no extra worker service in compose. Reminder job hourly, fixture sync daily. Revisit if we ever need multiple backend replicas. |
 | 8 | Reminder policy | **24h and 2h before kickoff**, deduplicated per user per game | Two touchpoints cover "plan the trip" and "leave now". Dedupe table prevents resends. |
-| 9 | Timezone | Store UTC, display **Europe/Zagreb** | Kickoff times come back in UTC-ish form; users are in Croatia. |
+| 9 | Timezone | Store UTC, display **Europe/Zagreb**. TheSportsDB `strTimestamp` is naive but verified UTC (2026-10-10T13:00:00 = 15:00 local, derby cross-checked 2026-10-07); parser attaches UTC, never local. | Kickoff times come back in UTC-ish form; users are in Croatia. |
 | 10 | Docs | This file (`PLAN.md` at repo root) | Decisions + checklist in one place, committed with the code. README stays user-facing; template docs untouched unless run/deploy steps change. |
 | 11 | API key account + storage | Dedicated account **`hajduk-detector@protonmail.com`** (Proton Mail — no phone verification) registered with API-Sports; key **value** lives in untracked `.env.local`, only an empty placeholder in tracked `.env`. `.env.local` also carries `SECRET_KEY` and `FIRST_SUPERUSER_PASSWORD`. `Settings` loads `../.env` then `../.env.local` (later wins, missing file skipped), and Playwright's `tests/config.ts` mirrors that. | `.env` is committed in this template — a real key in it would persist in git history. Separate account keeps credentials transferable and off the personal inbox. `POSTGRES_PASSWORD` is the deliberate exception: Docker Compose interpolates it out of `.env` and it only guards the local dev DB. Outside development the app refuses to start while a fallback is still `changethis`. |
 | 12 | Git workflow | Trunk-based: `master` stays green (CI-gated); **one branch per milestone** (`feat/m1-games-model` … `feat/m5-polish`), merged + pushed only after that milestone's work and tests pass. Commit messages mirror checklist items; `PLAN.md` checkbox updates ride in the same commit as the work. | Solo project — a branch per milestone costs ~4 commands each and buys a known-good rollback point per milestone. PRs are optional, not required: CI runs on plain pushes too (see #13). All git commands are run by the user; the agent does not run git. |
@@ -38,13 +38,15 @@ real state of the build.
 | 16 | Presentation layer | **No app UI. Games are published to a Google Sheet** written by the backend through the **Google Sheets API**, authenticated as a **dedicated Gmail account via OAuth** (stored refresh token, secrets in `.env.local`). The `frontend/` app, its Playwright suite, the frontend CI job, `scripts/generate-client.sh`, and the generated client are deleted. Email reminders (SMTP + `packages/react-email`) stay — that package is backend mail templates, not UI. | Maintaining a full React dashboard for a read-only fixture list is overkill; a shared Sheet is what the consumers already use. A dedicated Gmail account keeps the OAuth grant transferable and off personal inboxes (same reasoning as decision 11). |
 | 17 | Deployment | **Private local server, outgoing traffic only.** The app is never publicly deployed: no inbound ports, no domain, no Traefik/proxy exposure. The only egress is the Google Sheets API write (decision 16) and SMTP email send. `compose.yml` service exposure (`proxy`, labels, mailpit/adminer ports) and `deployment.md` / `deployment-docker-compose.md` are trimmed to match — local `docker compose up` for Postgres (+ Mailpit for dev), backend as a local process or container without published ports. | No consumers ever hit this app directly — they read the Sheet and receive email. Every open inbound port is attack surface with zero benefit; outgoing-only also sidesteps dynamic-IP / NAT issues on a home server. |
 
-### Open question (resolve during Milestone 4)
+### Open question (resolved 2026-10-07)
 
-- **API-Football free tier coverage of the *current* season** — their docs say
-  "covers recent seasons", which is ambiguous. First task of M4 is a live
-  verification call with the real key. If current season is excluded, fall back
-  to TheSportsDB (with its quirks documented above) or a scrape of
-  hajduk.hr / hnl.hr.
+- ~~**API-Football free tier coverage of the *current* season**~~ — **Resolved:
+  NOT covered.** `GET /fixtures?league=210&season=2026` returns
+  `"Free plans do not have access to this season, try from 2022 to 2024."`
+  (verified live, ~4/100 daily requests used). Decision: try **TheSportsDB**
+  (free key, quirks documented in #3) for current-season data first; if its
+  coverage is unusable, scrape hajduk.hr / hnl.hr; manual superuser entry
+  (M2 CRUD) remains the zero-dev fallback.
 
 ---
 
@@ -67,7 +69,7 @@ real state of the build.
 
 ### M1 — Game model + migration
 
-- [x] Add `Game` model to `backend/app/models.py`: `id`, `external_id` (API-Football fixture id, nullable for manual entries, unique), `home_team`, `away_team`, `competition`, `kickoff` (UTC, `DateTime(timezone=True)`), `venue_name`, `venue_id` (external), `status` (`scheduled/postponed/cancelled/finished`), `source` (`api/manual`), `created_at`, `updated_at`
+- [x] Add `Game` model to `backend/app/models.py`: `id`, `external_id` (provider fixture id, nullable for manual entries, unique), `home_team`, `away_team`, `competition`, `kickoff` (UTC, `DateTime(timezone=True)`), `venue_name`, `venue_id` (external), `status` (`scheduled/postponed/cancelled/finished`), `source` (`api/manual`), `created_at`, `updated_at`
 - [x] Add public schemas `GameCreate` / `GameUpdate` / `GamePublic` / `GamesPublic`
 - [x] Generate Alembic migration (`uv run alembic revision --autogenerate -m "add games"`) and review the generated file
 - [x] Apply migration (`uv run alembic upgrade head`), confirm table exists
@@ -103,9 +105,9 @@ real state of the build.
 
 ### M4 — Sync + notifications
 
-- [ ] **Verify API-Football free key against current-season HNL fixtures** (open question above) — decide keep/switch before writing the parser. Key is already in `.env.local` (decision 11); the call itself is the remaining work.
-- [ ] `backend/app/services/football_api.py`: fetch HNL fixtures, filter venue to Poljud, upsert by `external_id` (insert new, update kickoff/status for known, mark missing as cancelled)
-- [x] `API_FOOTBALL_API_KEY` added to `Settings` + empty placeholder in `.env` (value lives in `.env.local`) — pulled forward into M0
+- [x] **Verify TheSportsDB coverage of current-season HNL/Poljud fixtures** with the free key before writing the parser — full round 9 (5 games, all venues with stable ids) confirmed; `eventsnextleague` truncated to 1 event, round-scoped polling chosen instead
+- [x] `backend/app/services/sportsdb.py`: poll current + next HNL rounds (`eventsround`, league `4629`, season `2026-2027`) plus Hajduk `eventsnext` (team `134019`) for cup/Europe games; keep `idVenue=18136`, upsert by `external_id` (= `idEvent`; insert new, update kickoff/status for known, skip `locked`). Tests in `backend/tests/services/test_sportsdb.py` (parse + monkeypatched sync, no network). Timestamps are UTC (decision 9).
+- [x] `API_FOOTBALL_API_KEY` added to `Settings` + empty placeholder in `.env` (value lives in `.env.local`) — pulled forward into M0; **removed 2026-10-07** (free tier lacks current season, decision 1): setting, `.env` placeholder, `.env.local` value all deleted
 - [ ] Timezone normalization: external kickoff → UTC on write; verify against a known fixture
 - [ ] APScheduler wiring in `backend/app/main.py`: daily fixture sync + hourly reminder check (skipped when `FASTAPI_ENV != development`… re-evaluate: should run in prod too, so gate on a `SCHEDULER_ENABLED` setting instead)
 - [ ] `Notification` table: `user_id`, `game_id`, `kind` (`24h`/`2h`), `sent_at`, unique constraint — dedupe so a user gets each reminder once
@@ -119,7 +121,7 @@ real state of the build.
 - [ ] Seed script / example data for a quick demo without an API key
 - [ ] User-facing settings: opt out of reminder emails (default: on)
 - [ ] Lint + tests green: `uv run prek run --all-files`, backend pytest, single (backend-only) CI job green on `master` after the merge (decision 13)
-- [ ] README section: what the app does, required `.env` vars (`API_FOOTBALL_API_KEY`, `GOOGLE_*`), Sheet setup, scheduler + outgoing-only deployment (decision 17)
+- [ ] README section: what the app does, required `.env` vars (`THESPORTSDB_*`, `GOOGLE_*`), Sheet setup, scheduler + outgoing-only deployment (decision 17)
 - [ ] Trim `deployment.md` / `deployment-docker-compose.md`, `compose.yml` (`proxy` service, Traefik labels, published ports) and any firewall/port docs to the outgoing-only model (decision 17)
 
 ---
