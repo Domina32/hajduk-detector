@@ -2,7 +2,7 @@
 
 ## Local Development
 
-For local development, run PostgreSQL and Mailpit with Docker Compose, and run the FastAPI and Vite development servers locally.
+For local development, run PostgreSQL and Mailpit with Docker Compose, and run the FastAPI development server locally.
 
 Start the supporting services:
 
@@ -23,16 +23,7 @@ Start the FastAPI development server:
 uv run fastapi dev
 ```
 
-In another terminal, from the project root, install the frontend dependencies and start the Vite development server:
-
-```bash
-npm install
-npm run dev
-```
-
 Now you can open these URLs:
-
-Frontend development server: <http://localhost:5173>
 
 Backend API: <http://localhost:8000>
 
@@ -40,21 +31,9 @@ Automatic interactive API documentation with Swagger UI: <http://localhost:8000/
 
 Mailpit: <http://localhost:8025>
 
-The frontend development server uses the backend at `http://localhost:8000`, as configured in `frontend/.env`.
-
-### Frontend Served by FastAPI
-
-Build the frontend from the `frontend` directory:
-
-```bash
-npm run build
-```
-
-The build is written to `backend/app/frontend` and served by FastAPI at <http://localhost:8000>. Rebuild the frontend after making frontend changes.
-
 ## Full Stack with Docker Compose
 
-To run the backend and built frontend in Docker Compose:
+To run the backend in Docker Compose:
 
 ```bash
 docker compose run --rm backend bash scripts/prestart.sh
@@ -63,7 +42,7 @@ docker compose watch
 
 Now you can open these URLs:
 
-Application, with the frontend and API served by FastAPI: <http://localhost:8000>
+Application, API served by FastAPI: <http://localhost:8000>
 
 Automatic interactive API documentation with Swagger UI: <http://localhost:8000/docs>
 
@@ -105,7 +84,7 @@ Do not store deployment secrets in `.env`. Configure them as described in the [F
 
 ## Real Secrets and `.env.local`
 
-`.env` is committed to git, so anything sensitive belongs in `.env.local` in the project root, which is gitignored. `Settings` loads `../.env` first and `../.env.local` on top of it, so a value in `.env.local` always wins. The same two keys are read by the Playwright tests, and a missing `.env.local` is simply skipped.
+`.env` is committed to git, so anything sensitive belongs in `.env.local` in the project root, which is gitignored. `Settings` loads `../.env` first and `../.env.local` on top of it, so a value in `.env.local` always wins, and a missing `.env.local` is simply skipped.
 
 Put these in `.env.local`:
 
@@ -125,7 +104,7 @@ After changing it, update the already-initialised container, otherwise Postgres 
 docker exec hajduk-detector-db-1 psql -U postgres -c "ALTER USER postgres PASSWORD '$POSTGRES_PASSWORD';"
 ```
 
-If you run the full containerised stack rather than the two dev servers, pass both files so the backend container sees the real values too:
+If you run the full containerised backend rather than the dev server, pass both files so the backend container sees the real values too:
 
 ```bash
 docker compose --env-file .env --env-file .env.local up -d

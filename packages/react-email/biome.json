@@ -1,3 +1,27 @@
 {
-  "extends": ["../../frontend/biome.json"]
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "files": {
+    "includes": ["**", "!**/dist/**/*", "!**/node_modules/**/*"]
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "suspicious": {
+        "noExplicitAny": "off",
+        "noArrayIndexKey": "off"
+      },
+      "style": {
+        "noNonNullAssertion": "off",
+        "noParameterAssign": "error",
+        "useSelfClosingElements": "error",
+        "noUselessElse": "error"
+      }
+    }
+  },
+  "formatter": { "indentStyle": "space" },
+  "javascript": {
+    "formatter": { "quoteStyle": "double", "semicolons": "asNeeded" }
+  }
 }

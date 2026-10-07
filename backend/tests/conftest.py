@@ -22,8 +22,13 @@ def _test_database_url() -> str:
         base = env["DATABASE_URL"]
 
     if base.startswith("postgresql://postgres:${POSTGRES_PASSWORD}"):
+        # dotenv_values does not expand `${...}`; prefer the real environment,
+        # fall back to the value from the .env files themselves (just loads
+        # `.env.local`, so `.env`-only vars are not necessarily exported).
         base = base.replace(
-            "${POSTGRES_PASSWORD}", os.getenv("POSTGRES_PASSWORD", ""), 1
+            "${POSTGRES_PASSWORD}",
+            os.getenv("POSTGRES_PASSWORD") or env.get("POSTGRES_PASSWORD", ""),
+            1,
         )
     parts = urlsplit(base)
     if not (parts.path and parts.path != "/"):
