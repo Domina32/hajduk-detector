@@ -1,7 +1,7 @@
 from datetime import UTC
 from zoneinfo import ZoneInfo
 
-from sqlmodel import Session, delete, select
+from sqlmodel import Session, select
 
 from app.models import Game, GameSource, GameStatus
 from app.services import sportsdb
@@ -25,8 +25,6 @@ def test_parse_events() -> None:
 
 
 def test_sync_upserts_by_external_id(db: Session, monkeypatch) -> None:
-    db.exec(delete(Game))
-    db.commit()
     payload = {"events": [sample_event, sample_event_away_postponed]}
     monkeypatch.setattr(sportsdb, "fetch_round", lambda **kwargs: payload)
     monkeypatch.setattr(sportsdb, "fetch_team_events", lambda **kwargs: {"events": []})
