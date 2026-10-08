@@ -1,3 +1,4 @@
+import time
 from datetime import UTC, datetime
 from typing import Any
 
@@ -10,6 +11,9 @@ from app.models import Game, GameCreate, GameSource, GameStatus
 SPORTSDB_TEAM_ID = "134019"
 SPORTSDB_VENUE_ID = "18136"
 SPORTSDB_LEAGUE_ID = "4629"
+HNL_LEAGUE_START_MONTH = 7
+FALLBACK_ROUND = 1
+SEASON_LENGTH = 36
 
 STATUS_MAP = {
     "NS": GameStatus.scheduled,
@@ -18,8 +22,46 @@ STATUS_MAP = {
     "CANC": GameStatus.cancelled,
 }
 
-SEASON = "2026-2027"
-ROUND_NO = 9
+
+def current_season(today: datetime | None = None) -> str:
+    Y = today.year if today is not None else datetime.now(UTC).year
+    M = today.month if today is not None else datetime.now(UTC).month
+    return f"{Y}-{Y + 1}" if M >= HNL_LEAGUE_START_MONTH else f"{Y - 1}-{Y}"
+
+
+def fetch_next_league(league_id: str) -> dict[str, Any]:
+    response = httpx.get(
+        f"https://www.thesportsdb.com/api/v1/json/{settings.THESPORTSDB_API_KEY}/eventsnextleague.php",
+        params={"id": league_id},
+        timeout=20,
+    )
+    response.raise_for_status()
+    return dict(response.json())
+
+
+def discover_current_round(league_id: str) -> int:
+    try:
+        response = fetch_next_league(league_id=league_id)
+        result = int(response["events"][0]["intRound"])
+    except Exception as _:
+        result = FALLBACK_ROUND
+    return result
+
+
+def resolve_rounds(explicit: list[int] | None = None) -> list[int]:
+    if explicit is not None:
+        return list(explicit)
+    season = current_season(datetime.now(UTC))
+    round_no = discover_current_round(SPORTSDB_LEAGUE_ID)
+    rounds = []
+
+    for i in range(round_no, SEASON_LENGTH + 1, 1):
+        response = fetch_round(league_id=SPORTSDB_LEAGUE_ID, round_no=i, season=season)
+        if not response.get("events"):
+            break
+        rounds.append(i)
+
+    return rounds
 
 
 def fetch_round(league_id: str, round_no: int, season: str) -> dict[str, Any]:
@@ -28,6 +70,7 @@ def fetch_round(league_id: str, round_no: int, season: str) -> dict[str, Any]:
         params={"id": league_id, "r": round_no, "s": season},
         timeout=20,
     )
+    time.sleep(2)
     response.raise_for_status()
     return dict(response.json())
 
@@ -71,13 +114,17 @@ def parse_events(payload: dict[str, Any]) -> list[GameCreate]:
 
 
 def sync_events(
-    session: Session, *, round_numbers: list[int], team_ids: tuple[str, ...]
+    session: Session,
+    *,
+    round_numbers: list[int],
+    team_ids: tuple[str, ...],
 ) -> dict[str, int]:
     seen: dict[str, GameCreate] = {}
+    season = current_season(datetime.now(UTC))
 
     for round_no in round_numbers:
         for game_in in parse_events(
-            fetch_round(league_id=SPORTSDB_LEAGUE_ID, round_no=round_no, season=SEASON)
+            fetch_round(league_id=SPORTSDB_LEAGUE_ID, round_no=round_no, season=season)
         ):
             if game_in.external_id is None:
                 continue

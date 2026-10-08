@@ -35,9 +35,16 @@ PAYLOAD = {"events": [DERBY]}
 def test_create_sync_run(
     client: TestClient, superuser_token_headers: dict[str, str], monkeypatch
 ) -> None:
-    monkeypatch.setattr("app.services.sportsdb.fetch_round", lambda **kwargs: PAYLOAD)
+    def _fake_fetch_round(**kwargs):
+        return PAYLOAD if kwargs["round_no"] == 9 else {"events": []}
+
+    monkeypatch.setattr("app.services.sportsdb.fetch_round", _fake_fetch_round)
     monkeypatch.setattr(
         "app.services.sportsdb.fetch_team_events", lambda **kwargs: {"events": []}
+    )
+    monkeypatch.setattr(
+        "app.services.sportsdb.fetch_next_league",
+        lambda **kwargs: {"events": [{"intRound": "9"}]},
     )
 
     response = client.post(
@@ -47,7 +54,7 @@ def test_create_sync_run(
     content = response.json()
     assert content["created"] == 1
     assert content["error"] is None
-    assert content["rounds"] == [9, 10, 11]
+    assert content["rounds"] == [9]
 
 
 def test_create_sync_run_not_enough_permissions(
