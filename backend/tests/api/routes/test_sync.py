@@ -2,10 +2,8 @@ from collections.abc import Generator
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import Session, delete
 
 from app.core.config import settings
-from app.models import Game, SyncRun
 
 
 @pytest.fixture(scope="module")
@@ -67,13 +65,10 @@ def test_create_sync_run_not_enough_permissions(
 
 
 def test_get_sync_run_status(
-    db: Session,
     client: TestClient,
     superuser_token_headers: dict[str, str],
     monkeypatch,
 ) -> None:
-    db.exec(delete(Game))
-    db.commit()
     monkeypatch.setattr("app.services.sportsdb.fetch_round", lambda **kwargs: PAYLOAD)
     monkeypatch.setattr(
         "app.services.sportsdb.fetch_team_events", lambda **kwargs: {"events": []}
@@ -92,15 +87,11 @@ def test_get_sync_run_status(
 
 
 def test_sync_failure_is_recorded(
-    db: Session,
     client: TestClient,
     superuser_token_headers: dict[str, str],
     normal_user_token_headers: dict[str, str],
     monkeypatch,
 ) -> None:
-    db.exec(delete(SyncRun))
-    db.commit()
-
     def _boom(*_args: object, **_kwargs: object) -> None:
         raise Exception("boom")
 
@@ -129,13 +120,9 @@ def test_sync_failure_is_recorded(
 
 
 def test_get_sync_run_status_no_sync_runs(
-    db: Session,
     client: TestClient,
     normal_user_token_headers: dict[str, str],
 ) -> None:
-    db.exec(delete(SyncRun))
-    db.commit()
-
     response = client.get(
         f"{settings.API_V1_STR}/games/sync/status",
         headers=normal_user_token_headers,
