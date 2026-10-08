@@ -20,13 +20,13 @@ real state of the build.
 
 | # | Decision | Choice | Why |
 |---|----------|--------|-----|
-| 1 | Data source | **TheSportsDB, free key `123`** (no account, no payment) — replaces API-Football, whose free tier covers only 2022–2024 (verified 2026-10-07, see resolved question below). **Round-scoped polling**: `eventsround.php?id=4629&r=<n>&s=2026-2027` (league-wide, untruncated — full 5-game rounds verified) for the current + next 1–2 rounds, filtered by venue `idVenue=18136` (`Gradski stadion Poljud`), **plus** team-scoped `eventsnext.php?id=134019` (Hajduk Split) to catch cup/Europe home games, which live under other league ids. `eventsnextleague.php` is unusable on the free tier (returns 1 event — truncation quirk). | Must cover the *current* HNL season with venue info per fixture. football-data.org free tier excludes Croatia entirely. |
+| 1 | Data source | **TheSportsDB, free key `123`** (no account, no payment) — replaces API-Football, whose free tier covers only 2022–2024 (verified 2026-10-07, see resolved question below). **Round-scoped polling**: `eventsround.php?id=4629&r=<n>&s=<season>` (league-wide, untruncated — full 5-game rounds verified) from the **dynamically discovered current round through season end**, filtered by venue `idVenue=18136` (`Gradski stadion Poljud`), **plus** team-scoped `eventsnext.php?id=134019` (Hajduk Split) to catch cup/Europe home games, which live under other league ids. `eventsnextleague.php` is unusable for fixtures on the free tier (returns 1 event — truncation quirk) but that single event's `intRound` is enough to discover the current round. Season string derived from the date (HNL spans Jul–Jun). Free tier: 30 req/min, no daily cap — pace round fetches ~2s apart; ~30 requests/day for a full season sweep is fine. | Must cover the *current* HNL season with venue info per fixture. football-data.org free tier excludes Croatia entirely. |
 | 2 | Fallback data source | **Manual admin entry** (superuser CRUD API), then a scrape of hajduk.hr / hnl.hr if TheSportsDB coverage is unusable | Plan B if the key/Tier doesn't pan out. Built as part of the normal CRUD flow, so it costs almost nothing extra. |
 | 3 | Dev cross-check | ~~TheSportsDB free key `123`~~ — promoted to primary source (decision 1); cross-check role dropped | — |
 | 4 | Scope of games | **Venue-filtered**: any game whose venue is Poljud | Covers Hajduk home games *and* national team / cup games at the same stadium. |
 | 5 | Read access | **Shared data — all logged-in users see the same games** | Unlike template `items` (owner-scoped), the whole point is one unified place. Writes restricted to superusers. |
 | 6 | Notifications | **Email + Google Sheet** | Email via existing SMTP + react-email (1m/2w/1w/72h/48h reminders). The Sheet is the always-visible fixture list. No push/realtime in v1. |
-| 7 | Scheduler | **APScheduler in-process** with FastAPI | Single deployment, no extra worker service in compose. Reminder job hourly, fixture sync daily. Revisit if we ever need multiple backend replicas. |
+| 7 | Scheduler | **APScheduler in-process** with FastAPI | Single deployment, no extra worker service in compose. One daily run does fixture sync + reminder check. Revisit if we ever need multiple backend replicas. |
 | 8 | Reminder policy | **1 month, 2 weeks, 1 week, 72h and 48h before kickoff**, deduplicated per user per game | Five touchpoints cover "save the date" down to "final call". Dedupe table prevents resends. |
 | 9 | Timezone | Store UTC, display **Europe/Zagreb**. TheSportsDB `strTimestamp` is naive but verified UTC (2026-10-10T13:00:00 = 15:00 local, derby cross-checked 2026-10-07); parser attaches UTC, never local. | Kickoff times come back in UTC-ish form; users are in Croatia. |
 | 10 | Docs | This file (`PLAN.md` at repo root) | Decisions + checklist in one place, committed with the code. README stays user-facing; template docs untouched unless run/deploy steps change. |
@@ -109,17 +109,17 @@ real state of the build.
 - [x] `backend/app/services/sportsdb.py`: poll current + next HNL rounds (`eventsround`, league `4629`, season `2026-2027`) plus Hajduk `eventsnext` (team `134019`) for cup/Europe games; keep `idVenue=18136`, upsert by `external_id` (= `idEvent`; insert new, update kickoff/status for known, skip `locked`). Tests in `backend/tests/services/test_sportsdb.py` (parse + monkeypatched sync, no network). Timestamps are UTC (decision 9).
 - [x] `API_FOOTBALL_API_KEY` added to `Settings` + empty placeholder in `.env` (value lives in `.env.local`) — pulled forward into M0; **removed 2026-10-07** (free tier lacks current season, decision 1): setting, `.env` placeholder, `.env.local` value all deleted
 - [ ] Timezone normalization: external kickoff → UTC on write; verify against a known fixture
-- [ ] APScheduler wiring in `backend/app/main.py`: daily fixture sync + hourly reminder check (skipped when `FASTAPI_ENV != development`… re-evaluate: should run in prod too, so gate on a `SCHEDULER_ENABLED` setting instead)
+- [ ] APScheduler wiring in `backend/app/main.py`: one daily job for fixture sync + reminder check (gate on a `SCHEDULER_ENABLED` setting, not `FASTAPI_ENV`)
 - [ ] `Notification` table: `user_id`, `game_id`, `kind` (`1m`/`2w`/`1w`/`72h`/`48h`), `sent_at`, unique constraint — dedupe so a user gets each reminder once
 - [ ] react-email template `packages/react-email/emails/game_reminder.tsx` (teams, kickoff local time, venue, link to the Sheet)
-- [x] `POST /games/sync` (superuser, manual trigger, optional `rounds` body defaulting to `[9, 10, 11]`) + `GET /games/sync/status` (latest `SyncRun` row, 404 when never synced) — routes in `games.py` above `/{id}`, `SyncRun` table + migration, route tests in `tests/api/routes/test_sync.py` (monkeypatched, no network)
-- [ ] Reminder job: find games starting in ~1m, ~2w, ~1w, ~72h and ~48h, send to active users, record in `Notification`
+- [x] `POST /games/sync` (superuser, manual trigger, optional `rounds` body — omitted means auto-discover current round through season end) + `GET /games/sync/status` (latest `SyncRun` row, 404 when never synced) — routes in `games.py` above `/{id}`, `SyncRun` table + migration, route tests in `tests/api/routes/test_sync.py` (monkeypatched, no network)
+- [ ] Reminder job: find games starting in ~1m, ~2w, ~1w, ~72h and ~48h, send to active users (skipping users who opted out, M5), record in `Notification`. Poljud kickoffs move: when sync changes a game's kickoff, delete its `Notification` rows so reminders re-arm with the corrected time.
 - [ ] Test end-to-end with Mailpit (`http://localhost:8025`)
 
 ### M5 — Polish
 
 - [ ] Seed script / example data for a quick demo without an API key
-- [ ] User-facing settings: opt out of reminder emails (default: on)
+- [ ] Superuser-toggled reminder emails: `email_reminders: bool = True` on `User`, flippable via existing superuser `PATCH /users/{user_id}` (no self-service — there is no frontend); reminder job skips opted-out users. Needs column migration.
 - [ ] Lint + tests green: `uv run prek run --all-files`, backend pytest, single (backend-only) CI job green on `master` after the merge (decision 13)
 - [ ] README section: what the app does, required `.env` vars (`THESPORTSDB_*`, `GOOGLE_*`), Sheet setup, scheduler + outgoing-only deployment (decision 17)
 - [ ] Trim `deployment.md` / `deployment-docker-compose.md`, `compose.yml` (`proxy` service, Traefik labels, published ports) and any firewall/port docs to the outgoing-only model (decision 17)

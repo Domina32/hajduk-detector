@@ -23,9 +23,7 @@ from app.models import (
     SyncRunPublic,
     get_datetime_utc,
 )
-from app.services.sportsdb import SPORTSDB_TEAM_ID, sync_events
-
-DEFAULT_ROUNDS = [9, 10, 11]
+from app.services.sportsdb import SPORTSDB_TEAM_ID, resolve_rounds, sync_events
 
 router = APIRouter(
     prefix="/games",
@@ -71,9 +69,20 @@ def read_games(
     response_model=SyncRunPublic,
 )
 def create_sync_run(*, session: SessionDep, body: SyncRequest | None = None) -> Any:
-    rounds = DEFAULT_ROUNDS
-    if body is not None and body.rounds is not None:
-        rounds = body.rounds
+    explicit = body.rounds if body is not None else None
+    try:
+        rounds = resolve_rounds(explicit)
+    except Exception as e:
+        run = SyncRun(
+            rounds=[],
+            started_at=get_datetime_utc(),
+            finished_at=get_datetime_utc(),
+            error=str(e),
+        )
+        session.add(run)
+        session.commit()
+        session.refresh(run)
+        raise HTTPException(status_code=500, detail=f"Sync failed: {e}")
 
     run = SyncRun(rounds=rounds, started_at=get_datetime_utc())
     session.add(run)
