@@ -25,9 +25,9 @@ real state of the build.
 | 3 | Dev cross-check | ~~TheSportsDB free key `123`~~ — promoted to primary source (decision 1); cross-check role dropped | — |
 | 4 | Scope of games | **Venue-filtered**: any game whose venue is Poljud | Covers Hajduk home games *and* national team / cup games at the same stadium. |
 | 5 | Read access | **Shared data — all logged-in users see the same games** | Unlike template `items` (owner-scoped), the whole point is one unified place. Writes restricted to superusers. |
-| 6 | Notifications | **Email + Google Sheet** | Email via existing SMTP + react-email (24h/2h reminders). The Sheet is the always-visible fixture list. No push/realtime in v1. |
+| 6 | Notifications | **Email + Google Sheet** | Email via existing SMTP + react-email (1m/2w/1w/72h/48h reminders). The Sheet is the always-visible fixture list. No push/realtime in v1. |
 | 7 | Scheduler | **APScheduler in-process** with FastAPI | Single deployment, no extra worker service in compose. Reminder job hourly, fixture sync daily. Revisit if we ever need multiple backend replicas. |
-| 8 | Reminder policy | **24h and 2h before kickoff**, deduplicated per user per game | Two touchpoints cover "plan the trip" and "leave now". Dedupe table prevents resends. |
+| 8 | Reminder policy | **1 month, 2 weeks, 1 week, 72h and 48h before kickoff**, deduplicated per user per game | Five touchpoints cover "save the date" down to "final call". Dedupe table prevents resends. |
 | 9 | Timezone | Store UTC, display **Europe/Zagreb**. TheSportsDB `strTimestamp` is naive but verified UTC (2026-10-10T13:00:00 = 15:00 local, derby cross-checked 2026-10-07); parser attaches UTC, never local. | Kickoff times come back in UTC-ish form; users are in Croatia. |
 | 10 | Docs | This file (`PLAN.md` at repo root) | Decisions + checklist in one place, committed with the code. README stays user-facing; template docs untouched unless run/deploy steps change. |
 | 11 | API key account + storage | Dedicated account **`hajduk-detector@protonmail.com`** (Proton Mail — no phone verification) registered with API-Sports; key **value** lives in untracked `.env.local`, only an empty placeholder in tracked `.env`. `.env.local` also carries `SECRET_KEY` and `FIRST_SUPERUSER_PASSWORD`. `Settings` loads `../.env` then `../.env.local` (later wins, missing file skipped), and Playwright's `tests/config.ts` mirrors that. | `.env` is committed in this template — a real key in it would persist in git history. Separate account keeps credentials transferable and off the personal inbox. `POSTGRES_PASSWORD` is the deliberate exception: Docker Compose interpolates it out of `.env` and it only guards the local dev DB. Outside development the app refuses to start while a fallback is still `changethis`. |
@@ -110,10 +110,10 @@ real state of the build.
 - [x] `API_FOOTBALL_API_KEY` added to `Settings` + empty placeholder in `.env` (value lives in `.env.local`) — pulled forward into M0; **removed 2026-10-07** (free tier lacks current season, decision 1): setting, `.env` placeholder, `.env.local` value all deleted
 - [ ] Timezone normalization: external kickoff → UTC on write; verify against a known fixture
 - [ ] APScheduler wiring in `backend/app/main.py`: daily fixture sync + hourly reminder check (skipped when `FASTAPI_ENV != development`… re-evaluate: should run in prod too, so gate on a `SCHEDULER_ENABLED` setting instead)
-- [ ] `Notification` table: `user_id`, `game_id`, `kind` (`24h`/`2h`), `sent_at`, unique constraint — dedupe so a user gets each reminder once
+- [ ] `Notification` table: `user_id`, `game_id`, `kind` (`1m`/`2w`/`1w`/`72h`/`48h`), `sent_at`, unique constraint — dedupe so a user gets each reminder once
 - [ ] react-email template `packages/react-email/emails/game_reminder.tsx` (teams, kickoff local time, venue, link to the Sheet)
 - [x] `POST /games/sync` (superuser, manual trigger, optional `rounds` body defaulting to `[9, 10, 11]`) + `GET /games/sync/status` (latest `SyncRun` row, 404 when never synced) — routes in `games.py` above `/{id}`, `SyncRun` table + migration, route tests in `tests/api/routes/test_sync.py` (monkeypatched, no network)
-- [ ] Reminder job: find games starting in ~24h and ~2h, send to active users, record in `Notification`
+- [ ] Reminder job: find games starting in ~1m, ~2w, ~1w, ~72h and ~48h, send to active users, record in `Notification`
 - [ ] Test end-to-end with Mailpit (`http://localhost:8025`)
 
 ### M5 — Polish
