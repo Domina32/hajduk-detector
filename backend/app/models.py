@@ -3,7 +3,7 @@ import uuid
 from datetime import UTC, datetime
 
 from pydantic import EmailStr
-from sqlalchemy import JSON, DateTime
+from sqlalchemy import JSON, DateTime, UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -17,6 +17,14 @@ class GameStatus(enum.StrEnum):
 class GameSource(enum.StrEnum):
     api = "api"
     manual = "manual"
+
+
+class NotificationKind(enum.StrEnum):
+    m1 = "1m"
+    w2 = "2w"
+    w1 = "1w"
+    h72 = "72h"
+    h48 = "48h"
 
 
 def get_datetime_utc() -> datetime:
@@ -196,6 +204,27 @@ class SyncRunPublic(SyncRunBase):
 
 class SyncRequest(SQLModel):
     rounds: list[int] | None = None
+
+
+class Notification(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(
+        foreign_key="user.id", nullable=False, ondelete="CASCADE"
+    )
+    game_id: uuid.UUID = Field(
+        foreign_key="game.id", nullable=False, ondelete="CASCADE"
+    )
+    kind: NotificationKind = Field(nullable=False)
+    sent_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id", "game_id", "kind", name="uq_notification_user_game_kind"
+        ),
+    )
 
 
 # Generic message
