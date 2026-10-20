@@ -37,25 +37,11 @@ repos:
         language: unsupported
         types: [python]
 
-      - id: local-mypy
-        name: mypy check
-        entry: uv run mypy backend/app
+      - id: local-pyrefly
+        name: pyrefly check
+        entry: uv run pyrefly check
         require_serial: true
         language: unsupported
-        pass_filenames: false
-
-      - id: local-ty
-        name: ty check
-        entry: uv run ty check backend/app
-        require_serial: true
-        language: unsupported
-        pass_filenames: false
-
-      - id: add-release-date
-        language: unsupported
-        name: add date to latest release header
-        entry: uv run python scripts/add_latest_release_date.py
-        files: ^release-notes\.md$
         pass_filenames: false
 
       - id: zizmor

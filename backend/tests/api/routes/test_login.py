@@ -14,8 +14,8 @@ from app.utils import generate_password_reset_token
 from tests.utils.user import user_authentication_headers
 from tests.utils.utils import random_email, random_lower_string
 
-# Setup slots -- request one as a test parameter to use it. Every scope,
-# with worked examples: tests/api/routes/test_template.py
+# Setup slots -- request one as a test parameter to use it. Fixtures for
+# every scope live in tests/conftest.py.
 
 
 @pytest.fixture(scope="module")

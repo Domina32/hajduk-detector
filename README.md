@@ -1,8 +1,5 @@
 # Full Stack FastAPI Template
 
-[![Test Docker Compose](../../actions/workflows/test-docker-compose.yml/badge.svg)](../../actions/workflows/test-docker-compose.yml)
-[![Test Backend](../../actions/workflows/test-backend.yml/badge.svg)](../../actions/workflows/test-backend.yml)
-
 ## Technology Stack and Features
 
 - ⚡ [**FastAPI**](https://fastapi.tiangolo.com) for the Python backend API.
@@ -21,10 +18,6 @@
 - 📬 [Mailpit](https://mailpit.axllent.org) for local email testing during development.
 - ✅ Tests with [Pytest](https://pytest.org).
 - 🏭 CI (continuous integration) and CD (continuous deployment) based on GitHub Actions.
-
-### React Email Templates
-
-![Email templates screenshot](img/react-email.png)
 
 ### Mailpit - Local Email Testing
 
@@ -53,10 +46,6 @@ Self-hosted deployment with Docker Compose: [deployment-docker-compose.md](./dep
 General development docs: [development.md](./development.md).
 
 This includes the local FastAPI workflow, Docker Compose services, `.env` configuration, and more.
-
-## Release Notes
-
-Check the file [release-notes.md](./release-notes.md).
 
 ## License
 

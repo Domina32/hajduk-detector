@@ -13,8 +13,8 @@ from app.models import User, UserCreate
 from tests.utils.user import create_random_user
 from tests.utils.utils import random_email, random_lower_string
 
-# Setup slots -- request one as a test parameter to use it. Every scope,
-# with worked examples: tests/api/routes/test_template.py
+# Setup slots -- request one as a test parameter to use it. Fixtures for
+# every scope live in tests/conftest.py.
 
 
 @pytest.fixture(scope="module")

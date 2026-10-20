@@ -1,24 +1,11 @@
 [dependency-groups]
 dev = [
     "prek>=0.4.14,<1.0.0",
-    "typer>=0.27.1,<1.0.0",
     "zizmor>=1.29.0",
-]
-
-github-actions = [
-    "smokeshow >=0.5.0",
 ]
 
 [tool.uv.workspace]
 members = ["backend"]
-
-[tool.ruff.lint.per-file-ignores]
-# Only `backend/` has a pyproject.toml of its own; without a table here, ruff
-# falls back to its built-in defaults for the repo-root tooling, which are much
-# broader than the rules the backend uses. DTZ011 demands a tz-aware timestamp,
-# but the release tooling deliberately stamps a plain local date.
-"scripts/**" = ["DTZ011"]
-"hooks/**" = ["DTZ011"]
 
 [tool.typos.files]
 extend-exclude = [
@@ -41,7 +28,15 @@ extend-ignore-re = [
 alls = "alls"
 
 [tool.pyrefly]
-project-includes = [
-    "**/*.py*",
-    "**/*.ipynb",
+# Sole type checker for the backend (replaces mypy + ty).
+required-version = ">=1.4.0,<2.0.0"
+preset = "strict"
+project-includes = ["backend/app/**/*.py"]
+project-excludes = [
+    "**/alembic/**",
+    "**/node_modules/**",
+    "**/.venv/**",
 ]
+# `app` is a package under backend/, so that is the import root.
+search-path = ["backend"]
+python-version = "3.14"

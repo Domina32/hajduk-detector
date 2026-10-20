@@ -105,20 +105,19 @@ test: test-backend
 
 # ── Lint / checks ──────────────────────────────────────────────────────
 
-# All prek hooks (ruff, mypy, ty, biome, typos, client freshness).
+# All prek hooks (ruff, pyrefly, typos, zizmor).
 check:
     uv run prek run --all-files
 
-# Fast subset without regenerating the client: ruff + biome + typos.
+# Fast lint subset: ruff only. Full check is `just check` (prek).
 lint:
     uv run ruff check backend/app
     uv run ruff format --check backend/app
 
 
-# Backend type checks (mypy strict + ty) as run by prek.
+# Backend type check (pyrefly, strict preset) as run by prek.
 typecheck:
-    uv run mypy backend/app
-    uv run ty check backend/app
+    uv run pyrefly check
 
 # ── Cleanup ────────────────────────────────────────────────────────────
 

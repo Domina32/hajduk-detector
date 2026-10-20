@@ -7,8 +7,8 @@ from sqlmodel import Session, select
 from app.core.config import settings
 from app.models import User
 
-# Setup slots -- request one as a test parameter to use it. Every scope,
-# with worked examples: tests/api/routes/test_template.py
+# Setup slots -- request one as a test parameter to use it. Fixtures for
+# every scope live in tests/conftest.py.
 
 
 @pytest.fixture(scope="module")

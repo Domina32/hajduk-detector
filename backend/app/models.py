@@ -1,3 +1,9 @@
+# pyrefly: ignore-errors[no-matching-overload]
+#
+# SQLModel types `Field(sa_type=...)` as accepting a `type[Any]`, but its
+# documented usage is to pass a configured type *instance* such as
+# `DateTime(timezone=True)`. Every field below uses that documented form, so
+# the overload mismatch is a third-party typing imprecision, not a bug here.
 import enum
 import uuid
 from datetime import UTC, datetime
@@ -75,7 +81,7 @@ class User(UserBase, table=True):
     hashed_password: str
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
-        sa_type=DateTime(timezone=True),  # type: ignore
+        sa_type=DateTime(timezone=True),
     )
     items: list[Item] = Relationship(back_populates="owner", cascade_delete=True)
 
@@ -113,7 +119,7 @@ class Item(ItemBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
-        sa_type=DateTime(timezone=True),  # type: ignore
+        sa_type=DateTime(timezone=True),
     )
     owner_id: uuid.UUID = Field(
         foreign_key="user.id", nullable=False, ondelete="CASCADE"
@@ -138,7 +144,7 @@ class GameBase(SQLModel):
     home_team: str = Field(max_length=255)
     away_team: str = Field(max_length=255)
     competition: str = Field(max_length=255)
-    kickoff: datetime = Field(sa_type=DateTime(timezone=True))  # type: ignore
+    kickoff: datetime = Field(sa_type=DateTime(timezone=True))
     venue_name: str | None = Field(default=None, max_length=255)
     venue_id: str | None = Field(default=None, max_length=255)
     status: GameStatus = Field(default=GameStatus.scheduled)
@@ -165,11 +171,11 @@ class Game(GameBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
-        sa_type=DateTime(timezone=True),  # type: ignore
+        sa_type=DateTime(timezone=True),
     )
     updated_at: datetime | None = Field(
         default_factory=get_datetime_utc,
-        sa_type=DateTime(timezone=True),  # type: ignore
+        sa_type=DateTime(timezone=True),
         sa_column_kwargs={"onupdate": get_datetime_utc},
     )
 
@@ -217,7 +223,7 @@ class Notification(SQLModel, table=True):
     kind: NotificationKind = Field(nullable=False)
     sent_at: datetime | None = Field(
         default_factory=get_datetime_utc,
-        sa_type=DateTime(timezone=True),  # type: ignore
+        sa_type=DateTime(timezone=True),
     )
 
     __table_args__ = (
