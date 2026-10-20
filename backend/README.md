@@ -1,4 +1,4 @@
-# FastAPI Project - Backend
+# Backend
 
 ## Requirements
 
@@ -24,6 +24,8 @@ $ uv run fastapi dev
 ```
 
 The API is available at `http://localhost:8000`, with automatic interactive docs at `http://localhost:8000/docs`.
+
+`just dev` from the project root does all of the above in one command.
 
 ## General Workflow
 
@@ -99,6 +101,14 @@ docker compose exec backend bash scripts/tests-start.sh -x
 
 When the tests run, they generate `htmlcov/index.html`. Open it in your browser to inspect the test coverage.
 
+## Type Checking
+
+[pyrefly](https://pyrefly.org) is the type checker, configured in the root `pyproject.toml` with the `strict` preset. It covers `backend/app`.
+
+```console
+$ just typecheck
+```
+
 ## Migrations
 
 Make sure you create a revision of your models and upgrade the database with that revision every time you change them. From the `backend` directory, use `uv` to run Alembic against the PostgreSQL container:
@@ -151,4 +161,23 @@ Once you are done, regenerate the templates used by the application:
 
 ```console
 $ npm run email:export
+```
+
+## Admin Scripts
+
+| Script | Purpose |
+|---|---|
+| `scripts/prestart.sh` | Run the migrations and create the first superuser |
+| `scripts/test.sh` | Run pytest with coverage |
+| `scripts/game_admin.py` | Show, lock, unlock and edit games by hand |
+
+`game_admin.py` talks to a running backend and logs in as the first
+superuser. It is wrapped in `just` recipes — see
+[development.md](../development.md) for the details.
+
+```console
+$ uv run python scripts/game_admin.py show <game-uuid>
+$ uv run python scripts/game_admin.py lock <game-uuid>
+$ uv run python scripts/game_admin.py unlock <game-uuid>
+$ uv run python scripts/game_admin.py set <game-uuid> "kickoff=2026-10-17T19:00:00+00:00"
 ```

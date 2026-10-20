@@ -11,6 +11,7 @@ from app.api.deps import (
     get_current_active_superuser,
     get_current_user,
 )
+from app.core.config import settings
 from app.models import (
     Game,
     GameCreate,
@@ -37,7 +38,9 @@ def read_games(
     session: SessionDep,
     from_: datetime | None = Query(default=None, alias="from"),
     to_: datetime | None = Query(default=None, alias="to"),
-    limit: int = Query(default=100, ge=1, le=500),
+    limit: int = Query(
+        default=settings.GAMES_DEFAULT_LIMIT, ge=1, le=settings.GAMES_MAX_LIMIT
+    ),
 ) -> Any:
     """
     Retrieve games.

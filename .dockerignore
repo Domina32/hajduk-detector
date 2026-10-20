@@ -3,3 +3,5 @@
 **/.venv
 backend/htmlcov
 node_modules
+.env
+.env.local

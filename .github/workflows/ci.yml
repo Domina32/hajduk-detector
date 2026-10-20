@@ -22,9 +22,6 @@ concurrency:
 permissions:
   contents: read
 
-env:
-  FASTAPI_ENV: development
-
 jobs:
   backend:
     name: Backend tests
@@ -48,6 +45,13 @@ jobs:
           cache-dependency-glob: |
             uv.lock
             pyproject.toml
+
+      - name: Create .env from template
+        run: |
+          cp .env.example .env
+          # The app refuses to start on a placeholder secret, so give the
+          # throwaway CI database a real one.
+          sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(openssl rand -hex 32)|" .env
 
       - name: Start PostgreSQL and Mailpit
         run: docker compose up -d --wait db mailpit

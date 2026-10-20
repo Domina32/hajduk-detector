@@ -1,5 +1,4 @@
-import warnings
-from typing import Literal, Self
+from typing import Self
 
 from pydantic import (
     EmailStr,
@@ -14,11 +13,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        # Use top level .env file (one level above ./backend/), then .env.local
-        # on top of it for real secrets. Files are applied in order, so
-        # .env.local wins; if it does not exist (CI, fresh clone) it is skipped.
-        # Both paths are relative to the working directory, so run from ./backend.
-        env_file=("../.env", "../.env.local"),
+        # Single env file, one level above ./backend/. It holds the real
+        # secrets and is gitignored; `.env.example` is the tracked template.
+        # The path is relative to the working directory, so run from ./backend.
+        env_file=("../.env",),
         env_ignore_empty=True,
         extra="ignore",
     )
@@ -26,9 +24,11 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
-    FRONTEND_HOST: str = "http://localhost:5173"
-    FASTAPI_ENV: Literal["development"] | None = None
     THESPORTSDB_API_KEY: str = "123"
+
+    # Games listing
+    GAMES_DEFAULT_LIMIT: int = 100
+    GAMES_MAX_LIMIT: int = 500
 
     PROJECT_NAME: str
     SENTRY_DSN: HttpUrl | None = None
@@ -58,8 +58,6 @@ class Settings(BaseSettings):
             self.EMAILS_FROM_NAME = self.PROJECT_NAME
         return self
 
-    EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
-
     @computed_field
     @property
     def emails_enabled(self) -> bool:
@@ -71,14 +69,11 @@ class Settings(BaseSettings):
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":
-            message = (
-                f'The value of {var_name} is "changethis", '
-                "for security, please change it, at least for deployments."
+            raise ValueError(
+                f'The value of {var_name} is "changethis", for security please '
+                "change it. Set it in .env (see .env.example) and run "
+                "`just check-env` to verify."
             )
-            if self.FASTAPI_ENV == "development":
-                warnings.warn(message, stacklevel=1)
-            else:
-                raise ValueError(message)
 
     @model_validator(mode="after")
     def _enforce_non_default_secrets(self) -> Self:

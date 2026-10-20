@@ -3,18 +3,17 @@
 # Full stack in compose = `just stack` (uses compose.override.yml automatically).
 
 set dotenv-load := true
-# Load `.env.local` (real secrets) instead of `.env` (placeholders): exported
-# vars beat Settings' own file lookup, so exporting `.env` would shadow the
-# real values with "changethis". Compose reads `.env` itself; Settings reads
-# both files itself; nothing in these recipes needs `.env` exported.
-set dotenv-path := ".env.local"
+# Load `.env` (the single env file, gitignored) into the recipe environment.
+# Compose reads `.env` itself; `Settings` reads it itself via `env_file`.
+set dotenv-path := ".env"
 
 _default:
     @just --list --unsorted
 
 # ── Setup ──────────────────────────────────────────────────────────────
 
-# First-time setup: tooling, deps, env files, git hooks, migrated DB.
+# First-time setup: tooling, deps, git hooks, migrated DB.
+# Copy .env.example to .env and fill in the secrets before running this.
 setup: install prek-install migrate
     @echo "Setup done. Run 'just dev' to start both servers."
 
@@ -33,11 +32,12 @@ check-env:
     #!/usr/bin/env bash
     set -euo pipefail
     missing=0
-    for f in .env .env.local; do
-      [ -f "$f" ] || { echo "MISSING $f"; missing=1; }
+    if [ ! -f .env ]; then echo "MISSING .env (copy .env.example to .env)"; missing=1; exit $missing; fi
+    for var in SECRET_KEY FIRST_SUPERUSER_PASSWORD POSTGRES_PASSWORD; do
+      if grep -q "^${var}=changethis$" .env || ! grep -q "^${var}=.\+" .env; then
+        echo "MISSING or placeholder ${var} in .env (see development.md)"; missing=1
+      fi
     done
-    if grep -q '^SECRET_KEY=$' .env.local 2>/dev/null || ! grep -q '^SECRET_KEY=.\+' .env.local 2>/dev/null; then echo "MISSING SECRET_KEY in .env.local (see development.md)"; missing=1; fi
-    if grep -q '^FIRST_SUPERUSER_PASSWORD=$' .env.local 2>/dev/null || ! grep -q '^FIRST_SUPERUSER_PASSWORD=.\+' .env.local 2>/dev/null; then echo "MISSING FIRST_SUPERUSER_PASSWORD in .env.local"; missing=1; fi
     exit $missing
 
 # ── Services ───────────────────────────────────────────────────────────
@@ -97,11 +97,30 @@ downgrade:
 # Uses its own `app_test` database (see backend/tests/conftest.py),
 # so it only needs Postgres up — never migrates the dev `app` DB.
 test-backend: db
-    cd backend && FASTAPI_ENV=development uv run bash scripts/tests-start.sh "local"
+    cd backend && uv run bash scripts/tests-start.sh "local"
 
 
 # Everything: backend suites.
 test: test-backend
+
+# ── Games ──────────────────────────────────────────────────────────────
+
+# Show a game: just game-show <game-uuid>
+game-show id:
+    cd backend && uv run python scripts/game_admin.py show {{id}}
+
+# Lock a game so fixture syncs stop overwriting it: just game-lock <game-uuid>
+game-lock id:
+    cd backend && uv run python scripts/game_admin.py lock {{id}}
+
+# Let fixture syncs update a game again: just game-unlock <game-uuid>
+game-unlock id:
+    cd backend && uv run python scripts/game_admin.py unlock {{id}}
+
+# Edit game fields by hand:
+#   just game-set <game-uuid> "kickoff=2026-10-17T19:00:00+00:00 home_team='Hajduk Split'"
+game-set id *fields:
+    cd backend && uv run python scripts/game_admin.py set {{id}} {{quote(fields)}}
 
 # ── Lint / checks ──────────────────────────────────────────────────────
 
@@ -111,8 +130,8 @@ check:
 
 # Fast lint subset: ruff only. Full check is `just check` (prek).
 lint:
-    uv run ruff check backend/app
-    uv run ruff format --check backend/app
+    uv run ruff check backend
+    uv run ruff format --check backend
 
 
 # Backend type check (pyrefly, strict preset) as run by prek.

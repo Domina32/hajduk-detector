@@ -1,144 +1,169 @@
-# FastAPI Project - Development
+# Development
 
 ## Local Development
 
-For local development, run PostgreSQL and Mailpit with Docker Compose, and run the FastAPI development server locally.
+For local development, run PostgreSQL and Mailpit with Docker Compose, and run
+the FastAPI development server locally.
 
-Start the supporting services:
+The `justfile` wraps the whole flow. From the project root:
+
+```bash
+just dev
+```
+
+That starts Postgres and Mailpit, runs the migrations, and starts the backend
+with reload. Open:
+
+- Backend API: <http://localhost:8000>
+- Interactive API docs: <http://localhost:8000/docs>
+- Mailpit (captured mail): <http://localhost:8025>
+
+`just --list` shows every recipe.
+
+### Manual setup
+
+If you prefer to run the steps yourself, from the project root:
 
 ```bash
 docker compose up -d db mailpit
-```
-
-Then, from the `backend` directory, install the dependencies and prepare the database:
-
-```bash
+cd backend
 uv sync
 uv run bash scripts/prestart.sh
-```
-
-Start the FastAPI development server:
-
-```bash
 uv run fastapi dev
 ```
 
-Now you can open these URLs:
-
-Backend API: <http://localhost:8000>
-
-Automatic interactive API documentation with Swagger UI: <http://localhost:8000/docs>
-
-Mailpit: <http://localhost:8025>
-
 ## Full Stack with Docker Compose
 
-To run the backend in Docker Compose:
+To run the backend in Docker Compose as well:
 
 ```bash
-docker compose run --rm backend bash scripts/prestart.sh
-docker compose watch
+just stack
 ```
 
-Now you can open these URLs:
+Stop a locally running FastAPI server before starting the Compose backend,
+because both use port `8000`.
 
-Application, API served by FastAPI: <http://localhost:8000>
-
-Automatic interactive API documentation with Swagger UI: <http://localhost:8000/docs>
-
-Adminer, database web administration: <http://localhost:8080>
-
-Traefik UI, to see how the routes are being handled by the proxy: <http://localhost:8090>
-
-Mailpit: <http://localhost:8025>
-
-Stop a locally running FastAPI server before starting the Compose backend because both use port `8000`.
-
-**Note**: The first time you start the stack, it might take a minute for all the services to be ready. To monitor it, use `docker compose logs`, or `docker compose logs backend` for the backend service.
+**Note**: the first time you start the stack, it might take a minute for all
+the services to be ready. To monitor it, use `docker compose logs`, or
+`docker compose logs backend` for the backend service.
 
 ## Mailpit
 
-[Mailpit](https://mailpit.axllent.org) captures emails sent during local development instead of delivering them. The local backend connects to it at `localhost:1025`, and the Compose backend connects to the `mailpit` service. Captured emails are available at <http://localhost:8025>.
+[Mailpit](https://mailpit.axllent.org) captures emails sent during local
+development instead of delivering them. The local backend connects to it at
+`localhost:1025`, and the Compose backend connects to the `mailpit` service.
+Captured emails are available at <http://localhost:8025>.
 
 ## Docker Compose Files and Environment Variables
 
-The main `compose.yml` file contains the configuration shared by the whole stack. Docker Compose loads it automatically.
+- `compose.yml` — the configuration shared by the whole stack. Docker Compose
+  loads it automatically. It publishes no ports; the app is never exposed.
+- `compose.override.yml` — local development settings: loopback-only port
+  bindings for Postgres and Mailpit, source syncing and reload for the
+  backend. Docker Compose applies it automatically on top of `compose.yml`.
+- `compose.deploy.yml` — the private-server overlay. It is used explicitly, so
+  the local override is not applied:
+  `docker compose -f compose.yml -f compose.deploy.yml up -d`.
 
-The `compose.override.yml` file adds local development settings, such as mounting the source code as a volume. Docker Compose also loads it automatically and applies it on top of `compose.yml`.
-
-The `compose.deploy.yml` file contains the deployment-specific settings, including HTTPS and automatic certificate handling. It is explicitly combined with `compose.yml` when deploying the application.
-
-The backend reads local settings from the `.env` file. Docker Compose also uses it for variable interpolation and passes the settings each container needs.
-
-After changing variables, make sure you restart the stack:
-
-```bash
-docker compose watch
-```
+Docker Compose reads `.env` for variable interpolation and passes each
+container the settings it needs. After changing variables, restart the stack.
 
 ## The `.env` File
 
-The tracked `.env` file contains local development defaults, passwords, and other configuration. Its hostnames use `localhost` for processes running on your machine. Docker Compose overrides hostnames such as the database and SMTP server with their Compose service names.
+`.env` is the single source of configuration. It holds the real secrets and is
+gitignored; `.env.example` is the tracked template.
 
-Do not store deployment secrets in `.env`. Configure them as described in the [FastAPI Cloud deployment guide](./deployment.md) or the [Docker Compose deployment guide](./deployment-docker-compose.md).
+Create it once:
 
-## Real Secrets and `.env.local`
-
-`.env` is committed to git, so anything sensitive belongs in `.env.local` in the project root, which is gitignored. `Settings` loads `../.env` first and `../.env.local` on top of it, so a value in `.env.local` always wins, and a missing `.env.local` is simply skipped.
-
-Put these in `.env.local`:
-
-```env
-SECRET_KEY=
-FIRST_SUPERUSER_PASSWORD=
+```bash
+cp .env.example .env
 ```
 
-Generate `SECRET_KEY` with `openssl rand -hex 32`, choose a real `FIRST_SUPERUSER_PASSWORD`, and paste the key from API-Sports. Because `env_ignore_empty` is on, an empty value is ignored and the fallback in `.env` is used instead.
+Then fill in:
 
-`POSTGRES_PASSWORD` is the exception: Docker Compose interpolates it out of `.env`, so it has to stay there. It only guards your local development database.
+```env
+SECRET_KEY=changethis
+FIRST_SUPERUSER_PASSWORD=changethis
+POSTGRES_PASSWORD=changethis
+```
 
-After changing it, update the already-initialised container, otherwise Postgres keeps the password it was created with:
+Generate the secrets with `openssl rand -hex 32` and pick a real
+`FIRST_SUPERUSER_PASSWORD`. `just check-env` fails fast while any of them is
+still a placeholder. The app itself refuses to start on a placeholder secret —
+there is no development mode that relaxes this, so a placeholder can never
+reach a running deployment by accident. The test suite is the exception:
+`tests/conftest.py` injects its own secrets, so `just test-backend` works
+without touching your `.env`.
+
+`POSTGRES_PASSWORD` guards your local development database. Docker Compose
+interpolates it out of `.env`, so it has to live there. After changing it,
+update the already-initialised container, otherwise Postgres keeps the
+password it was created with:
 
 ```bash
 docker exec hajduk-detector-db-1 psql -U postgres -c "ALTER USER postgres PASSWORD '$POSTGRES_PASSWORD';"
 ```
 
-If you run the full containerised backend rather than the dev server, pass both files so the backend container sees the real values too:
+If you run the full containerised backend rather than the dev server, pass the
+file so the backend container sees the real values too:
 
 ```bash
-docker compose --env-file .env --env-file .env.local up -d
+docker compose --env-file .env up -d
 ```
 
-## Pre-commit Hooks and Code Linting
+## Editing Games by Hand
 
-The project uses [prek](https://prek.j178.dev/), a modern alternative to [pre-commit](https://pre-commit.com/), for code linting and formatting.
-
-You can find a file `.pre-commit-config.yaml` with configurations at the root of the project.
-
-### Install `prek` to Run Automatically
-
-`prek` is already part of the dependencies of the project.
-
-From the project root, install the Git hook so that `prek` runs automatically before each commit:
+The fixture provider (TheSportsDB) is sometimes wrong, so games have to be
+correctable by hand. `backend/scripts/game_admin.py` is a thin client over the
+API, wrapped in `just` recipes:
 
 ```bash
-uv run prek install -f
+just game-show   <game-uuid>
+just game-lock   <game-uuid>
+just game-unlock <game-uuid>
+just game-set    <game-uuid> "kickoff=2026-10-17T19:00:00+00:00 home_team='Hajduk Split'"
 ```
 
-The `-f` flag forces the installation, in case there was already a `pre-commit` hook previously installed.
+A **locked** game is skipped by the fixture sync, so a manual correction is
+not overwritten on the next run. Locking does not stop you editing the game
+by hand — only syncs. Editable fields: `home_team`, `away_team`,
+`competition`, `kickoff`, `venue_name`, `venue_id`, `status`.
 
-Now whenever you try to commit, for example with:
+The script talks to a running backend on `http://localhost:8000`; override
+with the `API_URL` environment variable.
+
+## Checks
+
+The project uses [prek](https://prek.j178.dev/), a modern alternative to
+[pre-commit](https://pre-commit.com/), for code linting and formatting.
+
+Install the Git hook so `prek` runs automatically before each commit:
 
 ```bash
-git commit
+just prek-install
 ```
 
-`prek` will check and format the code you are about to commit. If it modifies any files, add those files to Git again before committing.
+Now whenever you commit, `prek` checks and formats the code you are about to
+commit. If it modifies any files, add those files to Git again before
+committing.
 
-### Run `prek` Manually
-
-You can also run `prek` manually on all files from the project root:
+Run it manually on all files from the project root:
 
 ```bash
-uv run prek run --all-files
+just check
 ```
+
+That runs ruff, pyrefly (the type checker, strict preset), typos and zizmor.
+The narrower recipes are `just lint` (ruff only) and `just typecheck`
+(pyrefly only).
+
+## Tests
+
+```bash
+just test-backend
+```
+
+The suite runs against a dedicated `app_test` database derived from
+`DATABASE_URL` — never against your development `app` database. It is created
+and migrated automatically, and wiped before *and* after the run, so test users
+can never leak into the dev database.

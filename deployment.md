@@ -1,96 +1,110 @@
-# FastAPI Project - Deployment
+# Deployment
 
-Deploy the project to [FastAPI Cloud](https://fastapicloud.com) with the included GitHub Actions workflow.
+The app runs on a **private server with outgoing traffic only**. It is never
+published to the internet.
 
-## Create the FastAPI Cloud Application
+## The model
 
-Create an application in FastAPI Cloud and set its [Application Directory](https://fastapicloud.com/docs/builds-and-deployments/application-directory/) to `backend`.
+Nobody connects to this app. The consumers are:
 
-Connect a PostgreSQL database using the [Neon](https://fastapicloud.com/docs/integrations/neon-integration/) or [Supabase](https://fastapicloud.com/docs/integrations/supabase-integration/) integration. Both integrations configure a `DATABASE_URL` secret automatically. You can also configure `DATABASE_URL` manually for another PostgreSQL provider.
+- a **Google Sheet**, which people read;
+- **email**, which people receive.
 
-## Configure the Application
+So the server needs no inbound connectivity at all:
 
-### Environment Variables
+- **No published ports.** Postgres and the backend stay on the Docker
+  network. Nothing binds to `0.0.0.0` on the host.
+- **No domain, no DNS, no reverse proxy, no TLS.** There is no HTTP surface
+  to secure, because there is no HTTP surface.
+- **No firewall exceptions.** The host's inbound policy can stay closed.
+- **Egress only:** the Google Sheets API and your SMTP provider.
 
-Add these required [environment variables](https://fastapicloud.com/docs/builds-and-deployments/environment-variables/) to the FastAPI Cloud application:
+This also sidesteps dynamic-IP and NAT problems — a box on a home network
+behind a router needs nothing exposed.
 
-* `PROJECT_NAME`: The name of the project, used in the API documentation and emails.
-* `FIRST_SUPERUSER`: The email address of the first superuser.
-* `FRONTEND_HOST`: The public URL of the application, such as the generated `https://your-app.fastapicloud.dev` URL or a custom domain.
-
-To enable emails, add these optional environment variables with values from your email provider:
-
-* `SMTP_HOST`
-* `SMTP_USER`
-* `EMAILS_FROM_EMAIL`
-
-To enable Sentry, configure `SENTRY_DSN`.
-
-### Secrets
-
-Add these required values and mark them as secrets:
-
-* `SECRET_KEY`: A secret key used to sign security tokens.
-* `FIRST_SUPERUSER_PASSWORD`: The password of the first superuser.
-* `DATABASE_URL`: The PostgreSQL connection URL, configured automatically when using a database integration.
-
-To enable emails with an authenticated provider, add `SMTP_PASSWORD` as a secret.
-
-You can generate secure values for `SECRET_KEY` and `FIRST_SUPERUSER_PASSWORD` with:
-
-```bash
-python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+                 ┌──────────────────────────────┐
+  internet ──────│  private server              │
+  (no inbound)   │                              │
+                 │   backend ──> Google Sheets  │
+                 │      │                       │
+                 │      └──────> SMTP provider  │
+                 │                              │
+                 │   postgres (docker network)  │
+                 └──────────────────────────────┘
 ```
 
-## Configure Continuous Deployment
+## What runs where
 
-The included `.github/workflows/deploy.yml` workflow prepares the database and deploys the application whenever changes are pushed to `master`. You can also run it manually from the **Actions** tab.
+| Component | Where | Notes |
+|---|---|---|
+| `backend` | Docker container | FastAPI + the daily sync/reminder job |
+| `postgres` | Docker container | Only reachable on the Docker network |
+| Mailpit | **not deployed** | Development only. Production uses a real SMTP provider |
 
-Log in to FastAPI Cloud and configure the [deploy token](https://fastapicloud.com/docs/advanced-features/deploy-tokens/) and application ID as GitHub repository secrets:
+## Secrets
+
+The container needs these at runtime, and they must not live in the image:
+
+- `SECRET_KEY` — signs access tokens
+- `FIRST_SUPERUSER` / `FIRST_SUPERUSER_PASSWORD` — the bootstrap superuser
+- `POSTGRES_PASSWORD` — the database password
+- `SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAILS_FROM_EMAIL` — outgoing mail
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN` — the
+  Sheets API grant (once M3 lands)
+
+The Compose configuration reads them from the environment or from an `--env-file`.
+Generate the random ones with:
 
 ```bash
-uv run fastapi login
-uv run fastapi cloud setup-ci --secrets-only --app-id <your-app-id>
+python -c 'import secrets; print(secrets.token_urlsafe(32))'
 ```
 
-If the GitHub CLI is installed and authenticated, the command configures `FASTAPI_CLOUD_TOKEN` and `FASTAPI_CLOUD_APP_ID` automatically. Otherwise, it prints the values so you can add them in your repository under **Settings** > **Secrets and variables** > **Actions**.
+Keep the file that holds them out of the repository, and out of the image
+(`.dockerignore` already excludes `.env`).
 
-The workflow runs database migrations and creates the first superuser before deploying. In the repository's **Settings** > **Secrets and variables** > **Actions** page, add these repository variables:
+### Secrets must be real
 
-* `PROJECT_NAME`
-* `FIRST_SUPERUSER`
+There is no environment-mode switch. The app **refuses to start** while
+`SECRET_KEY`, `FIRST_SUPERUSER_PASSWORD` or the `DATABASE_URL` password is
+still `changethis` — in every environment, development included. That is the
+point: a placeholder secret can never reach a running deployment by accident.
 
-Add these repository secrets:
+The test suite is the one exception, and it handles it itself:
+`tests/conftest.py` injects its own `SECRET_KEY` and
+`FIRST_SUPERUSER_PASSWORD` before the app is imported, so the tests never
+depend on the real ones and CI needs to generate nothing.
 
-* `DATABASE_URL`
-* `SECRET_KEY`
-* `FIRST_SUPERUSER_PASSWORD`
+## Procedure
 
-Use the same values configured in FastAPI Cloud. For `DATABASE_URL`, use the connection URL from your database provider. The database must be reachable from GitHub-hosted runners so the preparation step can connect to it.
+The step-by-step commands are in
+[deployment-docker-compose.md](./deployment-docker-compose.md).
 
-The deployment workflow performs these steps:
+## Verifying a deployment
 
-1. Runs `backend/scripts/prestart.sh` to apply database migrations and create the first superuser.
-2. Deploys the project with `uv run fastapi deploy`.
+The backend exposes a health check at `/api/v1/utils/health-check/`. From the
+server itself:
 
-## URLs
+```bash
+docker compose -f compose.yml -f compose.deploy.yml exec backend \
+  curl -f http://localhost:8000/api/v1/utils/health-check/
+```
 
-Replace `your-app.fastapicloud.dev` with the URL of your FastAPI Cloud application.
+And check the logs for the scheduler doing its work:
 
-Application (API): `https://your-app.fastapicloud.dev`
+```bash
+docker compose -f compose.yml -f compose.deploy.yml logs -f backend
+```
 
-Interactive API docs: `https://your-app.fastapicloud.dev/docs`
+## Updates
 
-## Docker Compose
+Pull the new code, rebuild and restart:
 
-For deployment to your own server, see the [Docker Compose deployment guide](./deployment-docker-compose.md).
+```bash
+docker compose -f compose.yml -f compose.deploy.yml build
+docker compose -f compose.yml -f compose.deploy.yml run --rm backend bash scripts/prestart.sh
+docker compose -f compose.yml -f compose.deploy.yml up -d
+```
 
-## GitHub Repository Automation
-
-Install the following GitHub Apps to enable the included repository automation:
-
-* [Latest Changes](https://github.com/apps/latest-changes) updates `release-notes.md` when a pull request is merged.
-* [PR Push](https://github.com/apps/pr-push) lets the pre-commit workflow push automated fixes to pull request branches.
-* [PR Submit](https://github.com/apps/pr-submit) lets the **Bump pre-commit hooks** and **Prepare Release** workflows create pull requests.
-
-To publish code coverage with [Smokeshow](https://github.com/samuelcolvin/smokeshow), add `SMOKESHOW_AUTH_KEY` as a repository secret.
+`scripts/prestart.sh` runs the Alembic migrations and creates the first
+superuser, so run it before `up -d` after any model change.

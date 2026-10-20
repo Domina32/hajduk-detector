@@ -247,8 +247,3 @@ class Token(SQLModel):
 # Contents of JWT token
 class TokenPayload(SQLModel):
     sub: str | None = None
-
-
-class NewPassword(SQLModel):
-    token: str
-    new_password: str = Field(min_length=8, max_length=128)

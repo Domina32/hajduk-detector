@@ -11,9 +11,15 @@ from app.models import Game, GameCreate, GameSource, GameStatus
 SPORTSDB_TEAM_ID = "134019"
 SPORTSDB_VENUE_ID = "18136"
 SPORTSDB_LEAGUE_ID = "4629"
+SPORTSDB_API_URL = "https://www.thesportsdb.com/api/v1/json"
 HNL_LEAGUE_START_MONTH = 7
 FALLBACK_ROUND = 1
 SEASON_LENGTH = 36
+
+# The free tier allows 30 requests/minute. Every round fetch sleeps this long
+# so a full-season sweep stays under the cap.
+REQUEST_INTERVAL_SECONDS = 2
+HTTP_TIMEOUT = 20
 
 STATUS_MAP = {
     "NS": GameStatus.scheduled,
@@ -24,16 +30,17 @@ STATUS_MAP = {
 
 
 def current_season(today: datetime | None = None) -> str:
-    Y = today.year if today is not None else datetime.now(UTC).year
-    M = today.month if today is not None else datetime.now(UTC).month
-    return f"{Y}-{Y + 1}" if M >= HNL_LEAGUE_START_MONTH else f"{Y - 1}-{Y}"
+    now = today if today is not None else datetime.now(UTC)
+    if now.month >= HNL_LEAGUE_START_MONTH:
+        return f"{now.year}-{now.year + 1}"
+    return f"{now.year - 1}-{now.year}"
 
 
 def fetch_next_league(league_id: str) -> dict[str, Any]:
     response = httpx.get(
-        f"https://www.thesportsdb.com/api/v1/json/{settings.THESPORTSDB_API_KEY}/eventsnextleague.php",
+        f"{SPORTSDB_API_URL}/{settings.THESPORTSDB_API_KEY}/eventsnextleague.php",
         params={"id": league_id},
-        timeout=20,
+        timeout=HTTP_TIMEOUT,
     )
     response.raise_for_status()
     return dict(response.json())
@@ -66,21 +73,22 @@ def resolve_rounds(explicit: list[int] | None = None) -> list[int]:
 
 def fetch_round(league_id: str, round_no: int, season: str) -> dict[str, Any]:
     response = httpx.get(
-        f"https://www.thesportsdb.com/api/v1/json/{settings.THESPORTSDB_API_KEY}/eventsround.php",
+        f"{SPORTSDB_API_URL}/{settings.THESPORTSDB_API_KEY}/eventsround.php",
         params={"id": league_id, "r": round_no, "s": season},
-        timeout=20,
+        timeout=HTTP_TIMEOUT,
     )
-    time.sleep(2)
+    time.sleep(REQUEST_INTERVAL_SECONDS)
     response.raise_for_status()
     return dict(response.json())
 
 
 def fetch_team_events(team_id: str) -> dict[str, Any]:
     response = httpx.get(
-        f"https://www.thesportsdb.com/api/v1/json/{settings.THESPORTSDB_API_KEY}/eventsnext.php",
+        f"{SPORTSDB_API_URL}/{settings.THESPORTSDB_API_KEY}/eventsnext.php",
         params={
             "id": team_id,
         },
+        timeout=HTTP_TIMEOUT,
     )
     response.raise_for_status()
     return dict(response.json())
@@ -91,7 +99,7 @@ def parse_events(payload: dict[str, Any]) -> list[GameCreate]:
     events = [
         event
         for event in payload.get("events") or []
-        if str(event.get("idVenue")) == "18136"
+        if str(event.get("idVenue")) == SPORTSDB_VENUE_ID
     ]
     for event in events:
         kickoff = datetime.fromisoformat(event["strTimestamp"]).replace(tzinfo=UTC)
@@ -145,7 +153,11 @@ def sync_events(
             session.add(Game.model_validate(game_in))
             created += 1
         elif not game.locked:
-            game.sqlmodel_update(game_in.model_dump(exclude={"external_id", "source"}))
+            # `locked` is never written by a sync: it is set by a superuser
+            # to pin a row against fixture updates.
+            game.sqlmodel_update(
+                game_in.model_dump(exclude={"external_id", "source", "locked"})
+            )
             session.add(game)
             updated += 1
 

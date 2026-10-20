@@ -13,21 +13,18 @@ def _test_database_url() -> str:
     # Explicit override always wins (CI, custom local setup).
     if os.getenv("TEST_DATABASE_URL"):
         return os.environ["TEST_DATABASE_URL"]
-    base = os.getenv("DATABASE_URL")
+
+    env = dotenv_values(Path(__file__).resolve().parents[2] / ".env")
+    base = os.getenv("DATABASE_URL") or env.get("DATABASE_URL")
     if not base:
-        env = {
-            **dotenv_values(Path(__file__).resolve().parents[2] / ".env"),
-            **dotenv_values(Path(__file__).resolve().parents[2] / ".env.local"),
-        }
-        base = env["DATABASE_URL"]
+        raise RuntimeError("DATABASE_URL is not set in the environment or .env")
 
     if base.startswith("postgresql://postgres:${POSTGRES_PASSWORD}"):
         # dotenv_values does not expand `${...}`; prefer the real environment,
-        # fall back to the value from the .env files themselves (just loads
-        # `.env.local`, so `.env`-only vars are not necessarily exported).
+        # fall back to the value from .env itself.
         base = base.replace(
             "${POSTGRES_PASSWORD}",
-            os.getenv("POSTGRES_PASSWORD") or env.get("POSTGRES_PASSWORD", ""),
+            os.getenv("POSTGRES_PASSWORD") or env.get("POSTGRES_PASSWORD") or "",
             1,
         )
     parts = urlsplit(base)
@@ -40,6 +37,13 @@ def _test_database_url() -> str:
 
 
 os.environ["DATABASE_URL"] = _test_database_url()
+
+# The app refuses to start on a placeholder secret, so the suite supplies its
+# own. These override whatever `.env` holds (environment variables win over
+# the env file), which keeps the tests independent of the developer's real
+# secrets and lets CI run without generating any.
+os.environ["SECRET_KEY"] = "test-secret-key-not-used-for-anything-real"
+os.environ["FIRST_SUPERUSER_PASSWORD"] = "test-superuser-password"
 
 from alembic import command  # noqa: E402
 from alembic.config import Config  # noqa: E402
